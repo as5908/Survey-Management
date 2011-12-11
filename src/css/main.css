@@ -1,0 +1,38 @@
+h1 {
+	color: #006;
+	font:Verdana, Geneva, sans-serif
+}
+#nav {
+width:100%;
+height:35px;
+background-color:#09F;
+border:thick #000;
+}
+
+#nav ul{ padding:0; margin-left:0px; list-style: none; }
+#nav li{ display: inline; }
+
+#nav a{ 
+	display: block; 
+	float: left;
+	padding:11px 20px 10px 20px;
+	font:11px Verdana, sans-serif;
+	text-transform:uppercase;
+	color:#fff;
+	text-decoration:none;
+}
+
+#nav a:hover{ background-color:#03F; }
+#nav .active { background:#FFF; color:#000;}
+#nav .logout a{ background:#03F bottom center no-repeat; float: right;
+						font:11px Verdana, sans-serif;
+						text-transform:uppercase;
+						color:#FFF;  }
+#nav .login a{ background:#03F bottom center no-repeat; float: left;
+						font:11px Verdana, sans-serif;
+						text-transform:uppercase;
+						color:#FFF;  }
+html, body, p, td {
+	font: 10px/14px verdana,arial,"Bitstream Vera Sans",sans-serif !important;
+	font: 10px verdana,arial,"Bitstream Vera Sans",sans-serif;
+}

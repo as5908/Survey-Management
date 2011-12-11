@@ -1,0 +1,32 @@
+<table align="center" width="40%" border="1" cellpadding="5" cellspacing="5">
+
+<tr >
+	<th colspan="2">All Questions for survey: {{survey.surveyname}}</th>
+</tr>
+{% for question in questions %}
+<form name="editsurvey" method="post" action="/create">
+<tr>
+	<td colspan="2">Question{{ forloop.counter }}. {{question.questiondes}}</td>
+</tr>
+{% for answer in question.answerlist %}
+<tr>
+	<td colspan="2">{{answer}}</td>
+</tr>
+{% endfor %}
+<tr>
+<td colspan="2">
+
+<textarea name="answers" rows="4" cols="40">
+{{question.answerlist|join:"&#10;"}}
+</textarea>
+</td>
+</tr>
+<tr>
+	<td><input type="button" value="update" ></td><td><input type="button" value="delete" ></td>
+</tr>
+</form>
+{% endfor %}
+<tr>
+	<td colspan="2" align="center"><a href="/addQ?id={{survey.key.id}}">Add More Questions to this Survey</td>
+</tr>
+</table>

@@ -1,0 +1,27 @@
+<form name="addQ" method="post" action="/addQ">
+<table align="center" width="40%" border="0" cellpadding="5" cellspacing="5">
+<tr >
+	<th >Select a Survey</th>
+    <td>
+    	<select name="surveyid" >
+        	<option value="" ></option>
+        	{% for survey in surveys %}
+        	<option {% if survey.key.id == selsurvey.key.id %} selected {% endif %} 
+            value="{{survey.key.id}}">{{ survey.surveyname }}</option>
+            {% endfor %}
+        </select>
+    </td>
+</tr>
+<tr >
+	<th>Please enter a question for<br />your survey</th>
+    <td><input type="text" size="40" name="questiondes" /></td>
+</tr>
+<tr >
+	<th>Please enter all answer choices <br/>separated by new line character</th>
+    <td><textarea name="answers" rows="4" cols="40"></textarea></td>
+</tr>
+<tr >
+    <th colspan="2"><input type="submit" value="Add Question" /></th>
+</tr>
+</table>
+</form>
