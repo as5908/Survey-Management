@@ -24,6 +24,7 @@ border:thick #000;
 
 #nav a:hover{ background-color:#03F; }
 #nav .active { background:#FFF; color:#000;}
+#nav .hide { display:none;}
 #nav .logout a{ background:#03F bottom center no-repeat; float: right;
 						font:11px Verdana, sans-serif;
 						text-transform:uppercase;

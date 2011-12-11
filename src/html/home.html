@@ -1,6 +1,6 @@
 <table align="center" width="40%">
 <tr >
-	<th>Serial Number</th><th>Your Surveys</th><th>Creation Time</th><th>Last Modification Time</th>
+	<th>Serial Number</th><th>Your Surveys</th><th>Creation Time</th>
 </tr>
 {% for survey in surveys %}
 <tr >
@@ -9,12 +9,6 @@
     <a href="/edit?id={{survey.key.id}}">{{survey.surveyname}}</a>
     </td>
     <td align="center">{{survey.created}}</td>
-    <td align="center">{{survey.updated}}</td>
 </tr>
 {% endfor %}
-{{surveys||join:"&#10;"}
-<tr >
-	<td align="center"><textarea>{% for survey in surveys %}{{survey.surveyname}};{% endfor %}</textarea></td>
-</tr>
-
 </table>

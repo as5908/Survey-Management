@@ -3,7 +3,7 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'settings'
 
 from google.appengine.dist import use_library
 use_library('django', '1.2')
-
+import urllib
 from google.appengine.ext import db,webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
@@ -15,7 +15,6 @@ class SurveyModel(db.Model):
 	author = db.UserProperty(required=True)
 	surveyname = db.StringProperty(required=True)
 	created = db.DateTimeProperty(auto_now_add=True)
-	updated = db.DateTimeProperty(auto_now=True)
 
 # Todo defines the data model for the Todos
 # as it extends db.model the content of the class will automatically stored
@@ -51,7 +50,6 @@ class MainPage(webapp.RequestHandler):
 		
 		self.response.out.write(template.render('html/header.html',values))
 		self.response.out.write(template.render('html/home.html',values))
-		self.response.out.write("%s" %surveys.get().author)
 		self.response.out.write(template.render('html/footer.html',""))
 	
 
@@ -92,7 +90,7 @@ class CreateSurvey(webapp.RequestHandler):
 		survey.put()
 		#check whether the survey name already exists or not
 		self.response.out.write(template.render('html/header.html',values))
-		self.response.out.write("The survey name is %s" %survey_name)
+		self.response.out.write("The survey %s has been successfully created. Please view the survey to add questions" %survey_name)
 		self.response.out.write(template.render('html/footer.html',""))
 
 class EditSurvey(webapp.RequestHandler):
@@ -116,8 +114,39 @@ class EditSurvey(webapp.RequestHandler):
 		}
 		self.response.out.write(template.render('html/header.html',values))
 		self.response.out.write(template.render('html/edit.html',values))
-		self.response.out.write("%s" %questions.get())
 		self.response.out.write(template.render('html/footer.html',""))
+
+class DeleteQuestion(webapp.RequestHandler):
+	def post(self):
+		todo = self.request.get('todo');
+		questionid = int(self.request.get('questionid'))
+		questionEntity = QuestionModel.get_by_id(questionid)
+		if questionEntity.author == users.get_current_user() :
+			questionEntity.delete()
+			raw_id = self.request.get('surveyid');
+			id = int(raw_id)
+			self.redirect('/edit?' + urllib.urlencode({'id':id }))
+		else :
+			self.response.out.write("Unauthorized access!!!")
+			self.redirect(self.request.uri)
+
+class DeleteSurvey(webapp.RequestHandler):
+	def get(self):
+		todo = self.request.get('todo');
+		id = int(self.request.get('id'))
+		survey = SurveyModel.get_by_id(id)
+		survey_name = survey.surveyname
+		author = survey.author
+		#Deleting Survey Questions
+		questions = QuestionModel.gql("WHERE surveyname=:1 and author=:2",survey_name,author)
+		for question in questions:
+			question.delete()
+		if (author == users.get_current_user()):
+			survey.delete()
+			self.redirect("/view" )
+		else :
+			self.response.out.write("Unauthorized access!!!")
+			self.redirect(self.request.uri)
 
 class AddQuestion(webapp.RequestHandler):
 	def get(self):
@@ -127,10 +156,11 @@ class AddQuestion(webapp.RequestHandler):
 		if user:
 			url = users.create_logout_url(self.request.uri)
 			url_linktext = 'Logout'
-		surveys = SurveyModel.gql("Where author=:1",user)
+		surveys = SurveyModel.gql("Where author=:1",user)	
 		raw_id = self.request.get('id');
 		id = int(raw_id)
 		survey = SurveyModel.get_by_id(id);
+		
 		values = {'selsurvey': survey,
             'active': "edit",
             'user':user,
@@ -144,26 +174,31 @@ class AddQuestion(webapp.RequestHandler):
 		
 	def post(self):
 		user = users.get_current_user()
-		url = users.create_login_url(self.request.uri)
-		url_linktext = 'Login'
-		if user:
-			url = users.create_logout_url(self.request.uri)
-			url_linktext = 'Logout'
-		surveys = SurveyModel.gql("Where author=:1",user)
+		#surveys = SurveyModel.gql("Where author=:1",user)
 		raw_id = self.request.get('surveyid');
 		id = int(raw_id)
 		survey = SurveyModel.get_by_id(id);
 		question = self.request.get('questiondes')
+				
 		#Remove extra lines and spaces
 		answerchoices = self.request.get('answers').strip()
-		answers = answerchoices.splitlines()
-		ques = QuestionModel(author=user,
-							surveyname = survey.surveyname,
-								questiondes = question,
-								answerlist = answers)
-		ques.put()
-		self.response.out.write(ques.surveyname)
-		self.redirect("/edit?id=%s" %id)
+		answers = answerchoices.splitlines(0)
+		todo = str(self.request.get('todo'))
+		
+		if todo == "update":
+			self.response.out.write(todo)
+			questionid = int(self.request.get('questionid'))
+			questionEntity = QuestionModel.get_by_id(questionid)
+			questionEntity.answerlist = answers
+			questionEntity.questiondes = question
+			questionEntity.put()
+		else :
+			ques = QuestionModel(author=user,
+								surveyname = survey.surveyname,
+									questiondes = question,
+									answerlist = answers)
+			ques.put()
+		self.redirect('/edit?' + urllib.urlencode({'id':id }))
 
 class ViewSurvey(webapp.RequestHandler):
 	def get(self):
@@ -173,7 +208,7 @@ class ViewSurvey(webapp.RequestHandler):
 		if user:
 			url = users.create_logout_url(self.request.uri)
 			url_linktext = 'Logout'
-		surveys = SurveyModel.gql("Where author=:1",user)
+		surveys = SurveyModel.gql("Where author=:1 ORDER BY created",user)
 		values = {'surveys': surveys,
             'active': "view",
             'user':user,
@@ -204,6 +239,8 @@ class Participate(webapp.RequestHandler):
 		self.response.out.write(template.render('html/footer.html',""))
 		
 application = webapp.WSGIApplication([('/',MainPage),
+									('/deleteS',DeleteSurvey),
+									('/deleteQ',DeleteQuestion),
 									('/home',MainPage),
 									('/edit',EditSurvey),
 									('/view',ViewSurvey),

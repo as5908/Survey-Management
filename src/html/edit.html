@@ -4,15 +4,15 @@
 	<th colspan="2">All Questions for survey: {{survey.surveyname}}</th>
 </tr>
 {% for question in questions %}
-<form name="editsurvey" method="post" action="/create">
+<form name="editsurvey" method="post" action="/addQ">
 <tr>
-	<td colspan="2">Question{{ forloop.counter }}. {{question.questiondes}}</td>
+	<td colspan="2">Question{{ forloop.counter }}. 
+    <input type="text" size="40" name="questiondes" value="{{question.questiondes}}" />
+    <input type="hidden" name="questionid" value="{{question.key.id}}" />
+    <input type="hidden" name="surveyid" value="{{survey.key.id}}" />
+    <input type="hidden" name="todo" value="update" />
+    </td>
 </tr>
-{% for answer in question.answerlist %}
-<tr>
-	<td colspan="2">{{answer}}</td>
-</tr>
-{% endfor %}
 <tr>
 <td colspan="2">
 
@@ -22,9 +22,16 @@
 </td>
 </tr>
 <tr>
-	<td><input type="button" value="update" ></td><td><input type="button" value="delete" ></td>
+	<td><input type="submit" value="Update Question"></td></form>
+    <td>
+    	<form method="post" action="/deleteQ">
+        <input type="hidden" name="questionid" value="{{question.key.id}}" />
+        <input type="hidden" name="surveyid" value="{{survey.key.id}}" />
+        <input type="submit" value="Delete Question" />
+		</form>
+    </td>
 </tr>
-</form>
+
 {% endfor %}
 <tr>
 	<td colspan="2" align="center"><a href="/addQ?id={{survey.key.id}}">Add More Questions to this Survey</td>
