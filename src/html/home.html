@@ -1,4 +1,5 @@
 <table align="center" width="40%">
+{% if user %}
 <tr >
 	<th>Serial Number</th><th>Your Surveys</th><th>Creation Time</th>
 </tr>
@@ -11,4 +12,5 @@
     <td align="center">{{survey.created}}</td>
 </tr>
 {% endfor %}
+{% endif %}
 </table>

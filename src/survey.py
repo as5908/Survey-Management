@@ -148,6 +148,31 @@ class DeleteSurvey(webapp.RequestHandler):
 			self.response.out.write("Unauthorized access!!!")
 			self.redirect(self.request.uri)
 
+class ChangeSurvey(webapp.RequestHandler):
+	def post(self):
+		id = int(self.request.get('surveyid'))
+		survey = SurveyModel.get_by_id(id)
+		newsurvey_name = self.request.get('surveyname')
+		oldsurvey_name = survey.surveyname
+		author = survey.author
+		#check if no survey exists with same name for the author
+		check = SurveyModel.gql("WHERE surveyname=:1 and author=:2",newsurvey_name,author)
+		self.response.out.write(check.count())
+		if check.count() == 1:
+			self.redirect("/error?code=1")
+		elif author == users.get_current_user():
+			survey.surveyname = newsurvey_name
+			survey.put()
+			#Updating Survey Questions
+			questions = QuestionModel.gql("WHERE surveyname=:1 and author=:2",oldsurvey_name,author)
+			for question in questions:
+				question.surveyname = newsurvey_name
+				question.put()
+			self.redirect('/edit?' + urllib.urlencode({'id':id }))
+		else :
+			self.response.out.write("Unauthorized access!!!")
+			self.redirect(self.request.uri)
+
 class AddQuestion(webapp.RequestHandler):
 	def get(self):
 		user = users.get_current_user()
@@ -158,11 +183,13 @@ class AddQuestion(webapp.RequestHandler):
 			url_linktext = 'Logout'
 		surveys = SurveyModel.gql("Where author=:1",user)	
 		raw_id = self.request.get('id');
-		id = int(raw_id)
-		survey = SurveyModel.get_by_id(id);
+		survey = ""
+		if raw_id :
+			id = int(raw_id)
+			survey = SurveyModel.get_by_id(id);
 		
 		values = {'selsurvey': survey,
-            'active': "edit",
+            'active': "addQ",
             'user':user,
             'url':url,
             'url_linktext':url_linktext,
@@ -172,6 +199,25 @@ class AddQuestion(webapp.RequestHandler):
 		self.response.out.write(template.render('html/addq.html',values))
 		self.response.out.write(template.render('html/footer.html',""))
 		
+	def post(self):
+		user = users.get_current_user()
+		#surveys = SurveyModel.gql("Where author=:1",user)
+		raw_id = self.request.get('surveyid');
+		id = int(raw_id)
+		survey = SurveyModel.get_by_id(id);
+		question = self.request.get('questiondes')
+				
+		#Remove extra lines and spaces
+		answerchoices = self.request.get('answers').strip()
+		answers = answerchoices.splitlines(0)
+		ques = QuestionModel(author=user,
+							surveyname = survey.surveyname,
+								questiondes = question,
+								answerlist = answers)
+		ques.put()
+		self.redirect('/edit?' + urllib.urlencode({'id':id }))
+		
+class UpdateQuestion(webapp.RequestHandler):
 	def post(self):
 		user = users.get_current_user()
 		#surveys = SurveyModel.gql("Where author=:1",user)
@@ -227,18 +273,41 @@ class Participate(webapp.RequestHandler):
 		if user:
 			url = users.create_logout_url(self.request.uri)
 			url_linktext = 'Logout'
-		surveys = SurveyModel.gql("Where author=:1",user)
+		surveys = db.GqlQuery("SELECT * FROM SurveyModel")
 		values = {'surveys': surveys,
-            'active': "view",
+            'active': "participate",
             'user':user,
             'url':url,
             'url_linktext':url_linktext
 		}
 		self.response.out.write(template.render('html/header.html',values))
-		self.response.out.write(template.render('html/view.html',values))
+		self.response.out.write(template.render('html/participate.html',values))
+		self.response.out.write(template.render('html/footer.html',""))
+
+class ErrorHandle(webapp.RequestHandler):
+	def get(self):
+		user = users.get_current_user()
+		url = users.create_login_url(self.request.uri)
+		url_linktext = 'Login'
+		if user:
+			url = users.create_logout_url(self.request.uri)
+			url_linktext = 'Logout'
+		surveys = SurveyModel.gql("Where author=:1",user)
+		code = int(self.request.get('code'))
+		values = {'surveys': surveys,
+			'code':code,
+            'user':user,
+            'url':url,
+            'url_linktext':url_linktext
+		}
+		self.response.out.write(template.render('html/header.html',values))
+		self.response.out.write(template.render('html/error.html',values))
 		self.response.out.write(template.render('html/footer.html',""))
 		
 application = webapp.WSGIApplication([('/',MainPage),
+									('/updateQ',UpdateQuestion),
+									('/error',ErrorHandle),
+									('/changeN',ChangeSurvey),
 									('/deleteS',DeleteSurvey),
 									('/deleteQ',DeleteQuestion),
 									('/home',MainPage),

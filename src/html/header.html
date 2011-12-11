@@ -6,7 +6,7 @@
 <title>{{ active }}</title>
 </head>
 <body>
-<h1 align="center">Survey</h1>
+<h1 align="center">Survey-Monk</h1>
 {% if user %}
 Welcome, {{user.nickname}}
 <div id="nav" >
@@ -14,11 +14,13 @@ Welcome, {{user.nickname}}
     	<li ><a href="/home" {% if active == "home" %} class="active" {% endif %}>Home</a></li>
         <li><a href="/create" {% if active == "create" %} class="active" {% endif %}>Create Survey</a>
         </li>
-        <li><a href="/edit" {% if active == "edit" %} class="active" {% else %} class="hide" {% endif %}>Edit Survey</a>
-        </li>
-        <li><a href="/view" {% if active == "view" %} class="active" {% endif %}>View All Surveys</a>
+        <li><a href="/view" {% if active == "view" %} class="active" {% endif %}>Manage Surveys</a>
         </li>
 		<li><a href="/participate" {% if active == "participate" %} class="active" {% endif %}>Participate</a>
+        </li>
+		<li><a href="/addQ" {% if active == "addQ" %} class="active" {% endif %}>Add Questions</a>
+        </li>
+		<li><a href="" {% if active == "edit" %} class="active" {% else %} class="hide" {% endif %}>Edit Survey</a>
         </li>
         <li class="logout"><a href="{{url}}">{{url_linktext}}</a></li>
     </ul>
