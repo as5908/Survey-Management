@@ -1,0 +1,46 @@
+<table align="center" width="40%"  border="1">
+<!-- Already Voted -->
+
+{% for key,value in votedQA.items %}
+	{% if forloop.first %}
+    <tr><th colspan="2">You have already voted for following questions</th></tr>
+    {% endif %}
+	<tr>
+    	<td align="right" ><b>Question:</b></td>
+        <td> {{key.questiondes}}</td>
+    </tr>
+    <tr>
+    	<td align="right">You selected: </td><td>{{value}}</td>
+    </tr>
+{% endfor %}
+
+<form method="post" action="/castvote">
+
+{% for question in nonVotedQ %}
+{% if forloop.first %}
+<tr><th colspan="2">Please vote for following questions</th></tr>
+{% endif %}
+<tr>
+    <td align="right">Q{{ forloop.counter }}. </td>
+    <td>{{ question.questiondes }}
+    <input type="hidden" name="id{{ forloop.counter }}" value="{{ id }}" />
+    <input type="hidden" name="qid{{ forloop.counter }}" value="{{ question.key.id }}" />
+    </td>
+</tr>
+	{% for answer in question.answerlist %}
+<tr>
+    <td align="right"><input type="radio" name="answer{{ forloop.parentloop.counter }}" value="{{answer}}" /></td><td>{{answer}}</td>
+</tr>
+	{% endfor %}
+<tr>
+    <td colspan="2"><hr />
+    </td>
+</tr>
+{% if forloop.last %}
+<tr>
+    <th colspan="2"><input type="hidden" name="total" value="{{ forloop.counter }}" /><input type="submit" value="submit" /></form></th>
+</tr>
+{% endif %}
+{% endfor %}
+
+</table>

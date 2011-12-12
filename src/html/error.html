@@ -1,0 +1,14 @@
+<table align="center" width="40%" border="0" cellpadding="5" cellspacing="5">
+{% if code == 1 %}
+<tr>
+    <td>A survey with same name already exists. Click <a href="#" onclick="history.back(-1)">here</a> to go back!
+    </td>
+</tr>
+{% endif %}
+{% if code == 2 %}
+<tr>
+    <td>You are not authorized to perform this action
+    </td>
+</tr>
+{% endif %}
+</table>
