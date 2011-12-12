@@ -23,16 +23,19 @@ class QuestionModel(db.Model):
 	surveyname = db.StringProperty(required=True)
 	questiondes = db.StringProperty(required=True)
 	answerlist = db.StringListProperty(required=True)
-	voterlist = db.StringListProperty(default = [""])
+
 # Todo defines the data model for the Todos
 # as it extends db.model the content of the class will automatically stored
 class VoteModel(db.Model):
-	surveyname = db.StringProperty(required=True)
-	questiondes = db.StringProperty(required=True)
-	author = db.UserProperty(required=True)
+	qid = db.IntegerProperty(required=True)
+	voter = db.UserProperty(required=True)
+	answer = db.StringProperty(required=True)
+
+class ResultModel(db.Model):
+	qid = db.IntegerProperty(required=True)
 	answer = db.StringProperty(required=True)
 	count = db.IntegerProperty(default=0)
-	
+
 	
 class MainPage(webapp.RequestHandler):
 	def get(self):
@@ -125,6 +128,12 @@ class DeleteQuestion(webapp.RequestHandler):
 		questionid = int(self.request.get('questionid'))
 		questionEntity = QuestionModel.get_by_id(questionid)
 		if questionEntity.author == users.get_current_user() :
+			votes = VoteModel.gql("WHERE qid=:1",questionid)
+			for vote in votes:
+				vote.delete()
+			results = ResultModel.gql("WHERE qid=:1",questionid)
+			for result in results:
+				result.delete()
 			questionEntity.delete()
 			raw_id = self.request.get('surveyid');
 			surveyid = int(raw_id)
@@ -142,6 +151,12 @@ class DeleteSurvey(webapp.RequestHandler):
 		#Deleting Survey Questions
 		questions = QuestionModel.gql("WHERE surveyname=:1 and author=:2", survey_name, author)
 		for question in questions:
+			votes = VoteModel.gql("WHERE qid=:1",question.key().id())
+			for vote in votes:
+				vote.delete()
+			results = ResultModel.gql("WHERE qid=:1",question.key().id())
+			for result in results:
+				result.delete()
 			question.delete()
 		if (author == users.get_current_user()):
 			survey.delete()
@@ -217,7 +232,7 @@ class AddQuestion(webapp.RequestHandler):
 								questiondes=question,
 								answerlist=answers)
 		ques.put()
-		self.redirect('/edit?%s' + urllib.urlencode({'id':surveyid }))
+		self.redirect('/edit?' + urllib.urlencode({'id':surveyid }))
 		
 class UpdateQuestion(webapp.RequestHandler):
 	def post(self):
@@ -240,6 +255,14 @@ class UpdateQuestion(webapp.RequestHandler):
 			questionEntity.answerlist = answers
 			questionEntity.questiondes = question
 			questionEntity.put()
+			#delete all voting details
+			"""votes = VoteModel.gql("WHERE qid=:1",questionid)
+			for vote in votes:
+				vote.delete()
+			results = ResultModel.gql("WHERE qid=:1",questionid)
+			for result in results:
+				result.delete()
+			question.delete()"""
 		else :
 			ques = QuestionModel(author=user,
 								surveyname=survey.surveyname,
@@ -308,7 +331,7 @@ class ErrorHandle(webapp.RequestHandler):
 
 class StartSurvey(webapp.RequestHandler):
 	def get(self):
-		user = str(users.get_current_user())
+		user = users.get_current_user()
 		url = users.create_login_url(self.request.uri)
 		url_linktext = 'Login'
 		if user:
@@ -320,18 +343,33 @@ class StartSurvey(webapp.RequestHandler):
 		survey = SurveyModel.get_by_id(surveyid)
 		author = survey.author
 		
-
-		nonVotedQ = QuestionModel.gql("WHERE surveyname=:1 AND author=:2 AND voterlist =:3",survey.surveyname,author,user)
-		votedQ = QuestionModel.gql("WHERE surveyname=:1 AND author=:2 AND voterlist =:3 ",survey.surveyname,author,user)
-		self.response.out.write(nonVotedQ.count())
-		self.response.out.write(votedQ.count())
-		values = {'nonVotedQ':nonVotedQ.get(),
-			'votedQ' : votedQ,
+		#votedQ=[]
+		nonVotedQ=[]
+		#votedA=[]
+		votedQA = {}
+		allQ = QuestionModel.gql("WHERE surveyname=:1 AND author=:2 ",survey.surveyname,author)
+		total = allQ.count()
+		for question in allQ :
+			qid = long(question.key().id())
+			#self.response.out.write("qid-"+str(qid)+","+user)
+			queryVote = VoteModel.gql("WHERE qid=:1 AND voter=:2",qid,user)
+			if queryVote.count() == 0:#not voted yet
+				nonVotedQ.append(question)
+			else :
+				#votedQ.append(question)
+				#votedA.append(queryVote.get().answer)
+				votedQA[question]= queryVote.get().answer
+				#self.response.out.write(votedQA)
+		#votedQ = QuestionModel.gql("WHERE surveyname=:1 AND author=:2",survey.surveyname,author)
+		self.response.out.write("non-"+str(nonVotedQ.__len__()))
+		#self.response.out.write("voted"+str(votedQ.__len__()))
+		values = {'nonVotedQ':nonVotedQ,
+			'votedQA': votedQA,
             'user':user,
             'url':url,
             'url_linktext':url_linktext,
             'id':surveyid,
-            'qid' : nonVotedQ.get().key().id()
+            'total':total,
 		}
 		self.response.out.write(template.render('html/header.html', values))
 		self.response.out.write(template.render('html/survey.html', values))
@@ -339,43 +377,49 @@ class StartSurvey(webapp.RequestHandler):
 	
 	def post(self):
 		user = users.get_current_user()
-		url = users.create_login_url(self.request.uri)
-		url_linktext = 'Login'
-		if user:
-			url = users.create_logout_url(self.request.uri)
-			url_linktext = 'Logout'	
+		#url = users.create_login_url(self.request.uri)
+		#url_linktext = 'Login'
+		#if user:
+		#	url = users.create_logout_url(self.request.uri)
+		#	url_linktext = 'Logout'	
 			
-		raw_id = self.request.get('id')
-		surveyid = int(raw_id)
-		survey = SurveyModel.get_by_id(surveyid)
+		#raw_id = self.request.get('id')
+		#surveyid = int(raw_id)
+		#survey = SurveyModel.get_by_id(surveyid)
 		
-		#update question Model entity
-		raw_qid = self.request.get('qid')
-		qid = int(raw_qid)
-			
-		raw_answer = self.request.get('answer')
+		total = int(self.request.get('total'))+1
 		
-		if raw_answer :
-			question = QuestionModel.get_by_id(qid)
-			list = question.voterlist
-			list.append(str(user))
-			question.voterlist = list#voter added for this question in voterlist
-			question.put()
-			author= str(question.author)
-			answer = str(raw_answer)
-			resultvote = VoteModel.gql("Where surveyname=:1 AND author=:2 AND questiondes=:3", question.surveyname,question.author,question.questiondes)
-			if resultvote.count() ==0:#Voting has not begin yet
-				count = 1
-			else :
-				count = resultvote.get().count +1
-			voteEntity = VoteModel(surveyname=question.surveyname,
-							questiondes=question.questiondes,
-							author=survey.author,
-							answer=answer,
-							count=count)
-			voteEntity.put()
-		
-		self.redirect('/vote?' + urllib.urlencode({'id':surveyid }))
+		for x in range(1,total):
+			#update question Model entity
+			self.response.out.write(x)
+			raw_qid = self.request.get('qid'+str(x))
+			qid = int(raw_qid)
+				
+			raw_answer = self.request.get('answer'+str(x))
+			voter=user
+			if raw_answer :
+				#question = QuestionModel.get_by_id(qid)
+				answer = str(raw_answer)				
+				#confirm whether the voter is present or not
+				confirm = VoteModel.gql("WHERE qid=:1 AND voter=:2",qid,user)
+				self.response.out.write(str(confirm.count())+" where qid " + str(qid) + str(voter))
+				if confirm.count() != 0:
+					self.redirect("/error?code=3")
+				
+				voteEntity = VoteModel (qid=qid,
+									voter=voter,
+									answer=answer)
+				voteEntity.put()
+				oldEntity = ResultModel.gql("WHERE qid=:1 and answer=:2",qid,answer)
+				if oldEntity.count()==0 :
+					newEntity = ResultModel(count=1,
+										qid=qid,
+										answer=answer)
+				else :
+					newEntity = oldEntity.get()
+					newEntity.count = newEntity.count+1
+				newEntity.put()
+		self.redirect('/participate')
 
 application = webapp.WSGIApplication([('/', MainPage),
 									('/vote', StartSurvey),
