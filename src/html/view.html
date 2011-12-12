@@ -1,6 +1,6 @@
 <table align="center" width="40%" border="0" cellpadding="5" cellspacing="5">
 <tr >
-	<th colspan="5" bgcolor="#e5ecf9">List Of All Available Surveys</th>
+	<th colspan="6" bgcolor="#e5ecf9">List Of All Available Surveys</th>
 </tr>
 {% for survey in surveys %}
 <tr >
@@ -9,6 +9,7 @@
     <td align="center"><a href="/addQ?id={{survey.key.id}}"> Add Questions</a></td>
     <td align="center"><a href="/edit?id={{survey.key.id}}"> Edit Survey </a></td>
     <td align="center"><a href="/deleteS?id={{survey.key.id}}" > Delete Survey</a></td>
+    <td align="center"><a href="/viewR?id={{survey.key.id}}" > View Results</a></td>
 </tr>
 {% endfor %}
 </table>
