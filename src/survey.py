@@ -19,6 +19,7 @@ class SurveyModel(db.Model):
 # Todo defines the data model for the Todos
 # as it extends db.model the content of the class will automatically stored
 class QuestionModel(db.Model):
+	sid = db.IntegerProperty(required=True)
 	author = db.UserProperty(required=True)
 	surveyname = db.StringProperty(required=True)
 	questiondes = db.StringProperty(required=True)
@@ -110,8 +111,8 @@ class EditSurvey(webapp.RequestHandler):
 			url_linktext = 'Logout'
 		surveyid = int(self.request.get('id'))
 		survey = SurveyModel.get_by_id(surveyid)
-		questions = db.GqlQuery("SELECT * FROM QuestionModel where surveyname =:1 and author=:2",
-							survey.surveyname, survey.author);
+		questions = db.GqlQuery("SELECT * FROM QuestionModel where sid =:1 and author=:2",
+							surveyid, survey.author);
 		values = {'survey':survey,
 			'questions': questions,
             'active': "edit",
@@ -149,7 +150,7 @@ class DeleteSurvey(webapp.RequestHandler):
 		survey_name = survey.surveyname
 		author = survey.author
 		#Deleting Survey Questions
-		questions = QuestionModel.gql("WHERE surveyname=:1 and author=:2", survey_name, author)
+		questions = QuestionModel.gql("WHERE sid=:1 and author=:2", surveyid, author)
 		for question in questions:
 			votes = VoteModel.gql("WHERE qid=:1",question.key().id())
 			for vote in votes:
@@ -181,7 +182,7 @@ class ChangeSurvey(webapp.RequestHandler):
 			survey.surveyname = newsurvey_name
 			survey.put()
 			#Updating Survey Questions
-			questions = QuestionModel.gql("WHERE surveyname=:1 and author=:2", oldsurvey_name, author)
+			questions = QuestionModel.gql("WHERE sid=:1 and author=:2", surveyid, author)
 			for question in questions:
 				question.surveyname = newsurvey_name
 				question.put()
@@ -228,6 +229,7 @@ class AddQuestion(webapp.RequestHandler):
 		answerchoices = self.request.get('answers').strip()
 		answers = answerchoices.splitlines(0)
 		ques = QuestionModel(author=user,
+							sid=surveyid,
 							surveyname=survey.surveyname,
 								questiondes=question,
 								answerlist=answers)
@@ -265,6 +267,7 @@ class UpdateQuestion(webapp.RequestHandler):
 			question.delete()"""
 		else :
 			ques = QuestionModel(author=user,
+								sid = surveyid,
 								surveyname=survey.surveyname,
 									questiondes=question,
 									answerlist=answers)
@@ -329,6 +332,46 @@ class ErrorHandle(webapp.RequestHandler):
 		self.response.out.write(template.render('html/error.html', values))
 		self.response.out.write(template.render('html/footer.html', ""))
 
+class ResultHandler(webapp.RequestHandler):
+	def get(self):
+		user = users.get_current_user()
+		url = users.create_login_url(self.request.uri)
+		url_linktext = 'Login'
+		if user:
+			url = users.create_logout_url(self.request.uri)
+			url_linktext = 'Logout'
+		raw_id= self.request.get('id')
+		surveyid = int(raw_id)
+		survey_name = SurveyModel.get_by_id(surveyid).surveyname
+		questions = QuestionModel.gql("WHERE sid=:1 ",surveyid)
+		values = {
+            'user':user,
+            'url':url,
+            'url_linktext':url_linktext
+		}
+		self.response.out.write(template.render('html/header.html', values))
+		self.response.out.write("""<table align="center"  width="40%%" >
+		<tr><th colspan="2" bgcolor="#e5ecf9" >%s</th></tr>""" % survey_name)
+		
+		for question in questions:
+			list = question.answerlist #All answer choices
+			qid = long(question.key().id())
+			questiondes = question.questiondes
+			self.response.out.write("""<tr><td colspan="2"><b>%s</b></td></tr>""" %questiondes)
+			self.response.out.write("""<tr><td>Votes</td><td>Choices</td></tr>""")
+			for ans  in list:
+				result = ResultModel.gql("WHERE answer=:1 AND qid=:2",ans,qid)
+				if result.count() > 0:
+					value = result.get().count
+				else :
+					value = 0
+				self.response.out.write("""<tr><td>%s</td>""" %value)
+				self.response.out.write("""<td>%s</td></tr>""" %ans)
+			self.response.out.write("""<td colspan="2"><hr/></td></tr>""")
+		self.response.out.write("""</table>""")
+		self.response.out.write(template.render('html/footer.html', ""))
+
+
 class StartSurvey(webapp.RequestHandler):
 	def get(self):
 		user = users.get_current_user()
@@ -347,7 +390,7 @@ class StartSurvey(webapp.RequestHandler):
 		nonVotedQ=[]
 		#votedA=[]
 		votedQA = {}
-		allQ = QuestionModel.gql("WHERE surveyname=:1 AND author=:2 ",survey.surveyname,author)
+		allQ = QuestionModel.gql("WHERE sid=:1 AND author=:2 ",surveyid,author)
 		total = allQ.count()
 		for question in allQ :
 			qid = long(question.key().id())
@@ -422,6 +465,7 @@ class StartSurvey(webapp.RequestHandler):
 		self.redirect('/participate')
 
 application = webapp.WSGIApplication([('/', MainPage),
+									('/results', ResultHandler),
 									('/vote', StartSurvey),
 									('/castvote', StartSurvey),
 									('/updateQ', UpdateQuestion),

@@ -42,5 +42,7 @@
 </tr>
 {% endif %}
 {% endfor %}
-
+{% if nonVotedQ|length == 0 %}
+<tr><td colspan="2" align="center">You have completed the survey.Please click <a href="/results?id={{ id }}">here</a> to view results</td></tr>
+{% endif %}
 </table>
