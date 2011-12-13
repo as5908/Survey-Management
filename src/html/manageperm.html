@@ -1,0 +1,48 @@
+{% if user %}
+<table align="center" width="40%" border="0" cellpadding="5" cellspacing="5">
+<tr >
+{% if visibility = "limited" %}
+	<th colspan="5" bgcolor="#e5ecf9">List of users who can view your survey - [{{survey.surveyname}}]</th>
+{% else %}
+	<th colspan="5" bgcolor="#e5ecf9">Your survey - [{{survey.surveyname}}] is visible to all</th>
+{% endif %}
+</tr>
+{% for username in usernames %}
+<form method="Post" action="/removeUser">
+<tr >
+	<td><input type="hidden" value="{{ username.nick }}" name="nickname" />
+    <input type="hidden" value="{{ survey.key.id }}" name="id"/>
+    	{{ username.nick }}
+    </td>
+    <td>
+    	<input type="submit" value="Revoke Access" />
+    </td>
+</tr>
+</form>
+{% endfor %}
+
+<form method="Post" action="/addUser">
+<tr >
+	<td><input type="hidden" value="{{ survey.key.id }}" name="id"/>
+    	Grant Acess (Please enter the username):
+    </td>
+    <td>
+    	<input type="text" name="nickname"  />
+    </td>
+</tr>
+<tr >
+    <th>
+    	<input type="submit" value="Grant Access"  />
+    </th>
+</form>
+{% if visibility = "limited" %}
+<form action="/makepublic" method="post">
+	<th><input type="hidden" value="{{ survey.key.id }}" name="id"/>
+    	<input type="submit" value="Make Public"  />
+    </th>
+</form>
+{% endif %}
+</tr>
+
+</table>
+{% endif %}
