@@ -1,3 +1,4 @@
+{% if user %}
 <table align="center" width="40%" border="0" cellpadding="5" cellspacing="5">
 <form method="post" action="/changeN">
 <tr >
@@ -41,3 +42,4 @@
 	<td colspan="2" align="center"><a href="/addQ?id={{survey.key.id}}">Add More Questions to this Survey</td>
 </tr>
 </table>
+{% endif %}

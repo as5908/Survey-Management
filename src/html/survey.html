@@ -1,4 +1,5 @@
-<table align="center" width="40%"  border="1">
+{% if user %}
+<table align="center" width="40%"  border="0">
 <!-- Already Voted -->
 
 {% for key,value in votedQA.items %}
@@ -18,7 +19,8 @@
 
 {% for question in nonVotedQ %}
 {% if forloop.first %}
-<tr><th colspan="2">Please vote for following questions</th></tr>
+<tr><th colspan="2">Please vote for following questions<input type="hidden" name="id" value="{{id}}" />
+</th></tr>
 {% endif %}
 <tr>
     <td align="right">Q{{ forloop.counter }}. </td>
@@ -46,3 +48,4 @@
 <tr><td colspan="2" align="center">You have completed the survey.Please click <a href="/results?id={{ id }}">here</a> to view results</td></tr>
 {% endif %}
 </table>
+{% endif %}

@@ -1,3 +1,4 @@
+{% if user %}
 <table align="center" width="40%" border="0" cellpadding="5" cellspacing="5">
 {% if code == 1 %}
 <tr>
@@ -11,4 +12,11 @@
     </td>
 </tr>
 {% endif %}
+{% if code == 4 %}
+<tr>
+    <th>The user already exists.Click <a href="#" onclick="history.back(-1)">here</a> to go back!
+    </th>
+</tr>
+{% endif %}
 </table>
+{% endif %}
