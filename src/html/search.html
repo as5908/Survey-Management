@@ -1,0 +1,21 @@
+{% if user %}
+<table align="center" width="60%" border="0" cellpadding="5" cellspacing="5">
+<tr >
+	<th colspan="4" bgcolor="#e5ecf9">Search Results - {{ matchlist|length }} found</th>
+</tr>
+<tr >
+	<th >Serial No.</th>
+    <th >Survey Name</th>
+    <th >Author</th>
+    <th >Creation Time</th>
+</tr>
+{% for survey in matchlist %}
+<tr >
+	<td align="center">{{forloop.counter}}</td>
+    <td align="center"><a href="/vote?id={{survey.key.id}}" >{{survey.surveyname}}</a></td>
+    <td align="center">{{survey.author}}</td>
+    <td align="center">{{survey.created}}</td>
+</tr>
+{% endfor %}
+</table>
+{% endif %}
