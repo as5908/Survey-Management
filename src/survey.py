@@ -7,7 +7,8 @@ import urllib
 from google.appengine.ext import db, webapp
 from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
-from google.appengine.api import users	
+from google.appengine.api import users
+
 
 # Todo defines the data model for the Todos
 # as it extends db.model the content of the class will automatically stored
@@ -65,6 +66,42 @@ class MainPage(webapp.RequestHandler):
 		
 		self.response.out.write(template.render('html/header.html', values))
 		self.response.out.write(template.render('html/home.html', values))
+		self.response.out.write(template.render('html/footer.html', ""))
+
+class Search(webapp.RequestHandler):
+	def post(self):
+		user = users.get_current_user()
+		url = users.create_login_url(self.request.uri)
+		url_linktext = 'Login'
+		if user:
+			url = users.create_logout_url(self.request.uri)
+			url_linktext = 'Logout'
+		searchword = str(self.request.get('searchfield')).lower()
+		surveys = db.GqlQuery("SELECT * FROM SurveyModel where visibility=True")
+		matchlist = []
+		for survey in surveys :
+			name = survey.surveyname.lower()
+			if name.find(searchword,0,len(name)) != -1 :
+				matchlist.append(survey)
+		
+		queryAccess = AccessModel.gql("WHERE nick=:1",user.nickname())
+		for result in queryAccess:
+			survey = SurveyModel.get_by_id(result.sid)
+			name = survey.surveyname.lower()
+			if name.find(searchword,0,len(name)) != -1 :
+				matchlist.append(survey)
+			
+		values = {
+			'surveys':surveys,
+			'matchlist':matchlist,
+            'active': "search",
+            'user':user,
+            'url':url,
+            'url_linktext':url_linktext				  
+		}
+		
+		self.response.out.write(template.render('html/header.html', values))
+		self.response.out.write(template.render('html/search.html', values))
 		self.response.out.write(template.render('html/footer.html', ""))
 	
 
@@ -390,16 +427,42 @@ class Participate(webapp.RequestHandler):
 			url = users.create_logout_url(self.request.uri)
 			url_linktext = 'Logout'
 		surveys = SurveyModel.gql("where visibility=True")
-		surveylist = []
+		#surveylist = []
 		
+		#votedA=[]
+		surveydict = {}
 		for survey in surveys:
-			surveylist.append(survey)
+			allQ = QuestionModel.gql("WHERE sid=:1 AND author=:2 ",long(survey.key().id()),survey.author)
+			if allQ.count() != 0:
+				surveydict[survey] = "view"
+			for question in allQ :
+				qid = long(question.key().id())
+				#self.response.out.write("qid-"+str(qid)+","+user)
+				queryVote = VoteModel.gql("WHERE qid=:1 AND voter=:2",qid,user)
+				#self.response.out.write("hello"+str(queryVote.count()))
+				if queryVote.count() == 0:#not voted yet
+					surveydict[survey] = "start"
+					#self.response.out.write(surveydict[survey])
+					break
+		#for survey in surveys:
+			#surveylist.append(survey)
 		queryAccess = AccessModel.gql("WHERE nick=:1",user.nickname())
 		
 		for result in queryAccess:
-			surveyObj = SurveyModel.get_by_id(result.sid)
-			surveylist.append(surveyObj)
-		values = {'surveys': surveylist,
+			survey = SurveyModel.get_by_id(result.sid)
+			allQ = QuestionModel.gql("WHERE sid=:1 AND author=:2 ",survey.key().id(),survey.author)
+			if allQ.count() != 0:
+				surveydict[survey] = "view"
+				for question in allQ :
+					qid = long(question.key().id())
+					#self.response.out.write("qid-"+str(qid)+","+user)
+					queryVote = VoteModel.gql("WHERE qid=:1 AND voter=:2",qid,user)
+					if queryVote.count() == 0:#question not voted yet
+						surveydict[survey] = "start"
+						break
+		#self.response.out.write(surveydict)
+			#surveylist.append(surveyObj)
+		values = {'surveys': surveydict,
             'active': "participate",
             'user':user,
             'url':url,
@@ -501,7 +564,7 @@ class StartSurvey(webapp.RequestHandler):
 				votedQA[question]= queryVote.get().answer
 				#self.response.out.write(votedQA)
 		#votedQ = QuestionModel.gql("WHERE surveyname=:1 AND author=:2",survey.surveyname,author)
-		self.response.out.write("non-"+str(nonVotedQ.__len__()))
+		#self.response.out.write("non-"+str(nonVotedQ.__len__()))
 		#self.response.out.write("voted"+str(votedQ.__len__()))
 		values = {'nonVotedQ':nonVotedQ,
 			'votedQA': votedQA,
@@ -528,7 +591,7 @@ class StartSurvey(webapp.RequestHandler):
 		#survey = SurveyModel.get_by_id(surveyid)
 		
 		total = int(self.request.get('total'))+1
-		raw_sid = self.requesi.get('id')
+		raw_sid = self.request.get('id')
 		if raw_sid :
 			surveyid = int(raw_sid)
 		else :
@@ -569,6 +632,7 @@ class StartSurvey(webapp.RequestHandler):
 
 application = webapp.WSGIApplication([('/', MainPage),
 									('/makepublic', MakePublic),
+									('/search', Search),
 									('/results', ResultHandler),
 									('/removeUser', RemoveUser),
 									('/perm', ManagePermission),

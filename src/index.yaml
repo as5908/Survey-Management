@@ -26,3 +26,13 @@ indexes:
   properties:
   - name: author
   - name: created
+
+- kind: SurveyModel
+  properties:
+  - name: visibility
+  - name: created
+
+- kind: SurveyModel
+  properties:
+  - name: visibility
+  - name: surveyname

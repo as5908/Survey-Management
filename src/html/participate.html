@@ -10,13 +10,17 @@
     <th >Creation Time</th>
     <th >Action</th>
 </tr>
-{% for survey in surveys %}
+{% for survey,value in surveys.items %}
 <tr >
 	<td align="center">{{forloop.counter}}</td>
-    <td align="center">{{survey.surveyname}}</td>
-    <td align="center">{{survey.author}}</td>
-    <td align="center">{{survey.created}}</td>
-    <td align="center"><a href="/vote?id={{survey.key.id}}" > Start Survey</a></td>
+    <td align="center">{{ survey.surveyname }}</td>
+    <td align="center">{{ survey.author }}</td>
+    <td align="center">{{ survey.created }}</td>
+	{% if value = "start" %}
+    <td ><a href="/vote?id={{ survey.key.id }}" > Complete Survey</a></td>
+	{% else %}
+    <td ><a href="/results?id={{ survey.key.id }}" > View Results</a></td>
+	{% endif %}
 </tr>
 {% endfor %}
 </table>

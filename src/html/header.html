@@ -8,7 +8,7 @@
 <body>
 <h1 align="center">Survey-Monk</h1>
 {% if user %}
-Welcome, {{user.nickname}}
+Welcome, {{user.nickname}}<div align="right"><form method="POST" action="/search"><input type="image" width="20" height="20" src="images/search.jpg" > <input type="text" name="searchfield"/></form></div>
 <div id="nav" >
     <ul>
     	<li ><a href="/home" {% if active == "home" %} class="active" {% endif %}>Home</a></li>
