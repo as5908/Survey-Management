@@ -1,0 +1,36 @@
+{% if user %}
+<table align="center" width="40%" border="1" cellpadding="5" cellspacing="5">
+<tr >
+<th colspan="2" bgcolor="#e5ecf9">Admin Interface</th>
+</tr>
+{% for administrator in administrators %}
+<form method="Post" action="/removeAdmin">
+<tr >
+	<td><input type="hidden" value="{{ administrator.key.id }}" name="aid" />
+		{{ administrator.username }}
+    </td>
+    <td>
+    	<input type="submit" {% if user.nickname == administrator.username %} disabled {% endif %} value="Revoke Access" />
+    </td>
+</tr>
+</form>
+{% endfor %}
+
+<form method="Post" action="/addAdmin">
+<tr >
+	<td>
+    	Make Admin (Please enter the username):
+    </td>
+    <td>
+    	<input type="text" name="nickname"  />
+    </td>
+</tr>
+<tr >
+<th colspan="2">
+    <input type="submit" value="Grant Access"  />
+    </th>
+</form>
+</tr>
+
+</table>
+{% endif %}

@@ -9,7 +9,14 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext.webapp.util import run_wsgi_app
 from google.appengine.api import users
 
+def authUser(user,author):
+	return (user == author) 
 
+def isAdmin(user):
+	if user.nickname() == "abhinavsahai4u" :
+		return True
+	results = AdminModel.gql("WHERE username=:1", user.nickname())
+	return results.count()!=0
 # Todo defines the data model for the Todos
 # as it extends db.model the content of the class will automatically stored
 class SurveyModel(db.Model):
@@ -45,20 +52,71 @@ class ResultModel(db.Model):
 class AccessModel(db.Model):
 	sid = db.IntegerProperty(required = True)
 	nick = db.StringProperty(required = True)
+
+class AdminModel(db.Model):
+	username = db.StringProperty(required = True)
+	position = db.StringProperty(default = "admin")
+
+class LoginModel(db.Model):
+	username = db.StringProperty(required=True)
+	lastLogin = db.DateTimeProperty(auto_now_add=True)
 	
 class MainPage(webapp.RequestHandler):
+	def get(self):
+		
+		user = users.get_current_user()
+		#userobj = LoginModel(username="test@example.com")
+		#userobj.put()
+		url = users.create_login_url(self.request.uri)
+		url_linktext = 'Login'
+		lastLogin=""
+		admin = "false"
+		if user:
+			result = LoginModel.gql("WHERE username=:1", user.nickname())
+			if result.count()!=0 :
+				userEntity = result.get()
+				lastLogin = userEntity.lastLogin
+				userEntity.delete()
+			userobj = LoginModel(username=user.nickname())
+			userobj.put()
+				
+			url = users.create_logout_url(self.request.uri)
+			url_linktext = 'Logout'
+			if isAdmin(user):
+				admin = "true"
+				self.response.out.write("Admin Interface")
+
+		surveys = db.GqlQuery("SELECT * FROM SurveyModel where author=:1", user)
+		values = {'admin':admin,
+			'surveys':surveys,
+            'active': "home",
+            'user':user,
+            'url':url,
+            'url_linktext':url_linktext,
+            'lastLogin' : lastLogin			  
+		}
+
+		self.response.out.write(template.render('html/header.html', values))
+		self.response.out.write(template.render('html/home.html', values))
+		self.response.out.write(template.render('html/footer.html', ""))
+
+class HomePage(webapp.RequestHandler):
 	def get(self):
 		user = users.get_current_user()
 		url = users.create_login_url(self.request.uri)
 		url_linktext = 'Login'
+		admin = "false"
 		if user:
 			url = users.create_logout_url(self.request.uri)
 			url_linktext = 'Logout'
-		
+			if isAdmin(user):
+				admin = "true"
+				self.response.out.write("Admin Interface")				
+
 		surveys = db.GqlQuery("SELECT * FROM SurveyModel where author=:1", user)
-		values = {
+		values = {'admin':admin,
 			'surveys':surveys,
-            'active': "home",
+            'active': "homepage",
             'user':user,
             'url':url,
             'url_linktext':url_linktext				  
@@ -68,6 +126,65 @@ class MainPage(webapp.RequestHandler):
 		self.response.out.write(template.render('html/home.html', values))
 		self.response.out.write(template.render('html/footer.html', ""))
 
+class UserManagement(webapp.RequestHandler):
+	def get(self):
+		user = users.get_current_user()
+		url = users.create_login_url(self.request.uri)
+		url_linktext = 'Login'
+		if user:
+			url = users.create_logout_url(self.request.uri)
+			url_linktext = 'Logout'
+			if isAdmin(user):
+				admin = "true"
+				self.response.out.write("Admin Interface")
+			self.redirect("/error?code=2")
+		administrators = db.GqlQuery("SELECT * FROM AdminModel")
+		values = {'admin':admin,
+			'administrators':administrators,
+            'active': "userM",
+            'user':user,
+            'url':url,
+            'url_linktext':url_linktext				  
+		}
+		
+		self.response.out.write(template.render('html/header.html', values))
+		self.response.out.write(template.render('html/userManagement.html', values))
+		self.response.out.write(template.render('html/footer.html', ""))
+
+class RemoveAdmin(webapp.RequestHandler):
+	def post(self):
+		user = users.get_current_user()
+		raw_id = self.request.get('aid')
+		if not raw_id or not user or not isAdmin(user) :
+			self.redirect("/error?code=2")
+		adminid = long(raw_id)
+		#nickname = AdminModel.get_by_id(adminid).username
+		#check to ensure there is no previous entry
+		#check = AdminModel.gql("WHERE username=:1",nickname)
+		#if check.count() != 0:
+		#	self.redirect("/error?code=4")
+		#else :
+		adminObj = AdminModel.get_by_id(adminid)
+		adminObj.delete()
+		self.redirect("/userM")
+
+class AddAdmin(webapp.RequestHandler):
+	def post(self):
+		user = users.get_current_user()
+		raw_name = self.request.get('nickname')
+		if not raw_name or not user or not isAdmin(user) :
+			self.redirect("/error?code=2")
+		username = str(raw_name)
+		
+		#check to ensure there is no previous entry
+		check = AdminModel.gql("WHERE username=:1",username)
+		if check.count() != 0: #already added
+			self.redirect("/error?code=4")
+		adminObj = AdminModel(username=username)
+		adminObj.put()
+		self.redirect("/userM")
+
+		
 class Search(webapp.RequestHandler):
 	def post(self):
 		user = users.get_current_user()
@@ -76,6 +193,9 @@ class Search(webapp.RequestHandler):
 		if user:
 			url = users.create_logout_url(self.request.uri)
 			url_linktext = 'Logout'
+			if isAdmin(user):
+				admin = "true"
+				self.response.out.write("Admin Interface")
 		searchword = str(self.request.get('searchfield')).lower()
 		surveys = db.GqlQuery("SELECT * FROM SurveyModel where visibility=True")
 		matchlist = []
@@ -90,7 +210,7 @@ class Search(webapp.RequestHandler):
 			name = survey.surveyname.lower()
 			if name.find(searchword,0,len(name)) != -1 :
 				matchlist.append(survey)
-			
+
 		values = {
 			'surveys':surveys,
 			'matchlist':matchlist,
@@ -113,7 +233,12 @@ class CreateSurvey(webapp.RequestHandler):
 		if user:
 			url = users.create_logout_url(self.request.uri)
 			url_linktext = 'Logout'
-		values = {
+		if isAdmin(user):
+			admin = "true"
+			self.response.out.write("Admin Interface")
+		else :
+			admin = "false"
+		values = {'admin': admin,
             'active': "create",
             'user':user,
             'url':url,
@@ -130,7 +255,12 @@ class CreateSurvey(webapp.RequestHandler):
 		if user:
 			url = users.create_logout_url(self.request.uri)
 			url_linktext = 'Logout'
-		values = {
+		if isAdmin(user):
+			admin = "true"
+			self.response.out.write("Admin Interface")
+		else :
+			admin = "false"
+		values = {'admin': admin,
             'active': "create",
             'user':user,
             'url':url,
@@ -164,7 +294,14 @@ class EditSurvey(webapp.RequestHandler):
 		survey = SurveyModel.get_by_id(surveyid)
 		questions = db.GqlQuery("SELECT * FROM QuestionModel where sid =:1 and author=:2",
 							surveyid, survey.author);
-		values = {'survey':survey,
+							
+		if isAdmin(user):
+			admin = "true"
+			self.response.out.write("Admin Interface")
+		else :
+			admin = "false"
+		values = {'admin': admin,
+			'survey':survey,
 			'questions': questions,
             'active': "edit",
             'url':url,
@@ -278,7 +415,13 @@ class ManagePermission(webapp.RequestHandler):
 		else :
 			visibility = "limited"
 			existingUsers = AccessModel.gql("WHERE sid=:1", surveyid)
-		values = {'visibility':visibility,
+		if isAdmin(user):
+			admin = "true"
+			self.response.out.write("Admin Interface")
+		else :
+			admin = "false"
+		values = {'admin': admin,
+			'visibility':visibility,
 			'usernames' : existingUsers,
 			'survey':survey,
             'user':user,
@@ -319,9 +462,14 @@ class AddQuestion(webapp.RequestHandler):
 		user = users.get_current_user()
 		url = users.create_login_url(self.request.uri)
 		url_linktext = 'Login'
+		admin = "false"
 		if user:
 			url = users.create_logout_url(self.request.uri)
 			url_linktext = 'Logout'
+			if isAdmin(user):
+				admin = "true"
+				self.response.out.write("Admin Interface")
+				
 		surveys = SurveyModel.gql("Where author=:1", user)	
 		raw_id = self.request.get('id');
 		survey = ""
@@ -329,7 +477,8 @@ class AddQuestion(webapp.RequestHandler):
 			surveyid = int(raw_id)
 			survey = SurveyModel.get_by_id(surveyid)
 		
-		values = {'selsurvey': survey,
+		values = {'admin': admin,
+			'selsurvey': survey,
             'active': "addQ",
             'user':user,
             'url':url,
@@ -408,7 +557,13 @@ class ViewSurvey(webapp.RequestHandler):
 			url = users.create_logout_url(self.request.uri)
 			url_linktext = 'Logout'
 		surveys = SurveyModel.gql("Where author=:1 ORDER BY created", user)
-		values = {'surveys': surveys,
+		if isAdmin(user):
+			admin = "true"
+			self.response.out.write("Admin Interface")
+		else :
+			admin = "false"
+		values = {'admin': admin,			
+			'surveys': surveys,
             'active': "view",
             'user':user,
             'url':url,
@@ -462,7 +617,13 @@ class Participate(webapp.RequestHandler):
 						break
 		#self.response.out.write(surveydict)
 			#surveylist.append(surveyObj)
-		values = {'surveys': surveydict,
+		if isAdmin(user):
+			admin = "true"
+			self.response.out.write("Admin Interface")
+		else :
+			admin = "false"
+		values = {'admin': admin,
+			'surveys': surveydict,
             'active': "participate",
             'user':user,
             'url':url,
@@ -482,7 +643,13 @@ class ErrorHandle(webapp.RequestHandler):
 			url_linktext = 'Logout'
 		surveys = SurveyModel.gql("Where author=:1", user)
 		code = int(self.request.get('code'))
-		values = {'surveys': surveys,
+		if isAdmin(user):
+			admin = "true"
+			self.response.out.write("Admin Interface")
+		else :
+			admin = "false"
+		values = {'admin': admin,
+			'surveys': surveys,
 			'code':code,
             'user':user,
             'url':url,
@@ -491,6 +658,40 @@ class ErrorHandle(webapp.RequestHandler):
 		self.response.out.write(template.render('html/header.html', values))
 		self.response.out.write(template.render('html/error.html', values))
 		self.response.out.write(template.render('html/footer.html', ""))
+
+class ViewVotes(webapp.RequestHandler):
+	def get(self):
+		user = users.get_current_user()
+		url = users.create_login_url(self.request.uri)
+		url_linktext = 'Login'
+		if user:
+			url = users.create_logout_url(self.request.uri)
+			url_linktext = 'Logout'
+		qid = long(self.request.get('qid'))
+		question = QuestionModel.get_by_id(qid)
+		author = question.author
+		surveyid = question.sid
+		survey = SurveyModel.get_by_id(surveyid)
+		if not authUser(user,author):
+			self.redirect("/error?code=2")
+		Voters = VoteModel.gql("WHERE qid=:1",qid)
+		if isAdmin(user):
+			admin = "true"
+			self.response.out.write("Admin Interface")
+		else :
+			admin = "false"
+		values = {'admin': admin,
+			'voters': Voters,
+			'question':question,
+			'survey':survey,
+            'user':user,
+            'url':url,
+            'url_linktext':url_linktext
+		}
+		self.response.out.write(template.render('html/header.html', values))
+		self.response.out.write(template.render('html/viewVotes.html', values))
+		self.response.out.write(template.render('html/footer.html', ""))
+
 
 class ResultHandler(webapp.RequestHandler):
 	def get(self):
@@ -504,7 +705,12 @@ class ResultHandler(webapp.RequestHandler):
 		surveyid = int(raw_id)
 		survey_name = SurveyModel.get_by_id(surveyid).surveyname
 		questions = QuestionModel.gql("WHERE sid=:1 ",surveyid)
-		values = {
+		if isAdmin(user):
+			admin = "true"
+			self.response.out.write("Admin Interface")
+		else :
+			admin = "false"
+		values = {'admin': admin,
             'user':user,
             'url':url,
             'url_linktext':url_linktext
@@ -517,7 +723,10 @@ class ResultHandler(webapp.RequestHandler):
 			list = question.answerlist #All answer choices
 			qid = long(question.key().id())
 			questiondes = question.questiondes
-			self.response.out.write("""<tr><td colspan="2" bgcolor="#e5ecf9"><b>%s</b></td></tr>""" %questiondes)
+			if question.author == user :
+				self.response.out.write("""<tr><td colspan="2" bgcolor="#e5ecf9"><b><a href="viewVotes?qid=%s">%s</a></b></td></tr>""" % (qid,questiondes))
+			else :
+				self.response.out.write("""<tr><td colspan="2" bgcolor="#e5ecf9"><b>%s</b></td></tr>""" %questiondes)
 			self.response.out.write("""<tr><td>Votes</td><td>Choices</td></tr>""")
 			for ans  in list:
 				result = ResultModel.gql("WHERE answer=:1 AND qid=:2",ans,qid)
@@ -566,7 +775,13 @@ class StartSurvey(webapp.RequestHandler):
 		#votedQ = QuestionModel.gql("WHERE surveyname=:1 AND author=:2",survey.surveyname,author)
 		#self.response.out.write("non-"+str(nonVotedQ.__len__()))
 		#self.response.out.write("voted"+str(votedQ.__len__()))
-		values = {'nonVotedQ':nonVotedQ,
+		if isAdmin(user):
+			admin = "true"
+			self.response.out.write("Admin Interface")
+		else :
+			admin = "false"
+		values = {'admin': admin,
+			'nonVotedQ':nonVotedQ,
 			'votedQA': votedQA,
             'user':user,
             'url':url,
@@ -631,6 +846,10 @@ class StartSurvey(webapp.RequestHandler):
 		self.redirect('/participate')
 
 application = webapp.WSGIApplication([('/', MainPage),
+									('/userM', UserManagement),
+									('/addAdmin', AddAdmin),
+									('/removeAdmin', RemoveAdmin),
+									('/viewVotes', ViewVotes),
 									('/makepublic', MakePublic),
 									('/search', Search),
 									('/results', ResultHandler),
@@ -644,6 +863,7 @@ application = webapp.WSGIApplication([('/', MainPage),
 									('/changeN', ChangeSurvey),
 									('/deleteS', DeleteSurvey),
 									('/deleteQ', DeleteQuestion),
+									('/homepage', HomePage),
 									('/home', MainPage),
 									('/edit', EditSurvey),
 									('/view', ViewSurvey),

@@ -1,0 +1,20 @@
+{% if user %}
+<table align="center" width="40%" border="0" cellpadding="5" cellspacing="5">
+<tr >
+	<th colspan="3" bgcolor="#e5ecf9">Survey Name - {{ survey.surveyname }}</th>
+</tr>
+<tr >
+	<td colspan="3" ><strong>Question - </strong>{{ question.questiondes }}</td>
+</tr>
+<tr >
+	<th>S.No.</th><th>Voter </th><th>Answer</th>
+</tr>
+{% for voter in voters %}
+<tr >
+	<td align="center">{{forloop.counter}}</td>
+    <td align="center"><a href="/vote?id={{survey.key.id}}" >{{voter.voter}}</a></td>
+    <td align="center">{{voter.answer}}</td>
+</tr>
+{% endfor %}
+</table>
+{% endif %}
