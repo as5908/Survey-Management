@@ -1,26 +1,20 @@
 {% if user %}
 <table align="center" width="40%" border="0" cellpadding="5" cellspacing="5">
 <tr >
-	<th colspan="5" bgcolor="#e5ecf9">List Of All Available Surveys</th>
+	<th colspan="4" bgcolor="#e5ecf9">List Of All Available Surveys</th>
 </tr>
 <tr >
 	<th >Serial No.</th>
     <th >Survey Name</th>
     <th >Author</th>
     <th >Creation Time</th>
-    <th >Action</th>
 </tr>
-{% for survey,value in surveys.items %}
+{% for survey in surveys %}
 <tr >
 	<td align="center">{{forloop.counter}}</td>
-    <td align="center">{{ survey.surveyname }}</td>
+    <td align="center"><a href="/vote?id={{ survey.key.id }}" >{{ survey.surveyname }}</a></td>
     <td align="center">{{ survey.author }}</td>
     <td align="center">{{ survey.created }}</td>
-	{% if value = "start" %}
-    <td ><a href="/vote?id={{ survey.key.id }}" > Complete Survey</a></td>
-	{% else %}
-    <td ><a href="/results?id={{ survey.key.id }}" > View Results</a></td>
-	{% endif %}
 </tr>
 {% endfor %}
 </table>

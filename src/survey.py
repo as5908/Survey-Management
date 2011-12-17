@@ -63,9 +63,10 @@ class LoginModel(db.Model):
 	
 class MainPage(webapp.RequestHandler):
 	def get(self):
-		
 		user = users.get_current_user()
-		#userobj = LoginModel(username="test@example.com")
+		#userobj = AdminModel(username="abhinavsahai4u")
+		#userobj.put()
+		#userobj = AccessModel(sid=100,nick="abhinavsahai4u")
 		#userobj.put()
 		url = users.create_login_url(self.request.uri)
 		url_linktext = 'Login'
@@ -131,6 +132,7 @@ class UserManagement(webapp.RequestHandler):
 		user = users.get_current_user()
 		url = users.create_login_url(self.request.uri)
 		url_linktext = 'Login'
+		admin = "false"
 		if user:
 			url = users.create_logout_url(self.request.uri)
 			url_linktext = 'Logout'
@@ -166,7 +168,8 @@ class RemoveAdmin(webapp.RequestHandler):
 		#	self.redirect("/error?code=4")
 		#else :
 		adminObj = AdminModel.get_by_id(adminid)
-		adminObj.delete()
+		if adminObj.username != "abhinavsahai4u":
+			adminObj.delete()
 		self.redirect("/userM")
 
 class AddAdmin(webapp.RequestHandler):
@@ -603,44 +606,15 @@ class Participate(webapp.RequestHandler):
 			surveys = db.GqlQuery("SELECT * FROM SurveyModel")
 		else :
 			surveys = SurveyModel.gql("where visibility=True")
-		#surveylist = []
 		
-		#votedA=[]
-		surveydict = {}
-		for survey in surveys:
-			allQ = QuestionModel.gql("WHERE sid=:1 AND author=:2 ",long(survey.key().id()),survey.author)
-			if allQ.count() != 0:
-				surveydict[survey] = "view"
-			for question in allQ :
-				qid = long(question.key().id())
-				#self.response.out.write("qid-"+str(qid)+","+user)
-				queryVote = VoteModel.gql("WHERE qid=:1 AND voter=:2",qid,user)
-				#self.response.out.write("hello"+str(queryVote.count()))
-				if queryVote.count() == 0:#not voted yet
-					surveydict[survey] = "start"
-					#self.response.out.write(surveydict[survey])
-					break
-		#for survey in surveys:
-			#surveylist.append(survey)
-		queryAccess = AccessModel.gql("WHERE nick=:1",user.nickname())
-		
-		for result in queryAccess:
-			survey = SurveyModel.get_by_id(result.sid)
-			allQ = QuestionModel.gql("WHERE sid=:1 AND author=:2 ",survey.key().id(),survey.author)
-			if allQ.count() != 0:
-				surveydict[survey] = "view"
-				for question in allQ :
-					qid = long(question.key().id())
-					#self.response.out.write("qid-"+str(qid)+","+user)
-					queryVote = VoteModel.gql("WHERE qid=:1 AND voter=:2",qid,user)
-					if queryVote.count() == 0:#question not voted yet
-						surveydict[survey] = "start"
-						break
-		#self.response.out.write(surveydict)
-			#surveylist.append(surveyObj)
-
+		if admin == "false":
+			queryAccess = AccessModel.gql("WHERE nick=:1",user.nickname())
+			for result in queryAccess:
+				survey = SurveyModel.get_by_id(result.sid)
+				surveys.append(survey)
+				
 		values = {'admin': admin,
-			'surveys': surveydict,
+			'surveys': surveys,
             'active': "participate",
             'user':user,
             'url':url,
@@ -695,7 +669,7 @@ class ViewVotes(webapp.RequestHandler):
 		author = question.author
 		surveyid = question.sid
 		survey = SurveyModel.get_by_id(surveyid)
-		if not authUser(user,author):
+		if not authUser(user,author) and admin == "false":
 			self.redirect("/error?code=2")
 		Voters = VoteModel.gql("WHERE qid=:1",qid)
 
@@ -743,7 +717,7 @@ class ResultHandler(webapp.RequestHandler):
 			list = question.answerlist #All answer choices
 			qid = long(question.key().id())
 			questiondes = question.questiondes
-			if question.author == user :
+			if question.author == user or admin=="true":
 				self.response.out.write("""<tr><td colspan="2" bgcolor="#e5ecf9"><b><a href="viewVotes?qid=%s">%s</a></b></td></tr>""" % (qid,questiondes))
 			else :
 				self.response.out.write("""<tr><td colspan="2" bgcolor="#e5ecf9"><b>%s</b></td></tr>""" %questiondes)
@@ -779,7 +753,6 @@ class StartSurvey(webapp.RequestHandler):
 		surveyid = int(raw_id)
 		survey = SurveyModel.get_by_id(surveyid)
 		author = survey.author
-		
 		#votedQ=[]
 		nonVotedQ=[]
 		#votedA=[]
@@ -811,6 +784,7 @@ class StartSurvey(webapp.RequestHandler):
             'total':total,
 		}
 		self.response.out.write(template.render('html/header.html', values))
+		self.response.out.write(admin)
 		self.response.out.write(template.render('html/survey.html', values))
 		self.response.out.write(template.render('html/footer.html', ""))
 	

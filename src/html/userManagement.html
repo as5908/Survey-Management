@@ -10,7 +10,7 @@
 		{{ administrator.username }}
     </td>
     <td>
-    	<input type="submit" {% if user.nickname == administrator.username %} disabled {% endif %} value="Revoke Access" />
+    	<input type="submit" {% if user.nickname == administrator.username or administrator.nickname == "abhinavsahai4u" %} disabled {% endif %} value="Revoke Access" />
     </td>
 </tr>
 </form>
