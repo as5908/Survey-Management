@@ -1,7 +1,7 @@
 {% if user %}
 <table align="center" width="60%" border="0" cellpadding="5" cellspacing="5">
 <tr >
-	<th colspan="8" bgcolor="#e5ecf9">List Of All Available Surveys</th>
+	<th colspan="8" class="header">List Of All Available Surveys</th>
 </tr>
 <tr >
 	<th align="center">Serial</th>
@@ -17,11 +17,11 @@
 <tr >
 	<td align="center">{{forloop.counter}}</td>
     <td align="center">{{survey.surveyname}}</td>
-    <td align="center"><a href="/addQ?id={{survey.key.id}}"> Add Questions</a></td>
-    <td align="center"><a href="/edit?id={{survey.key.id}}"> Edit Survey </a></td>
-    <td align="center"><a href="/deleteS?id={{survey.key.id}}" > Delete Survey</a></td>
-    <td align="center"><a href="/results?id={{survey.key.id}}" > View Results</a></td>
-	<td align="center"><a href="/perm?id={{survey.key.id}}" > Access Control</a></td>
+    <td align="center"><a href="/addQ?id={{survey.key.id}}" class="user"> Add Questions</a></td>
+    <td align="center"><a href="/edit?id={{survey.key.id}}" class="user"> Edit Survey </a></td>
+    <td align="center"><a href="/deleteS?id={{survey.key.id}}" class="user"> Delete Survey</a></td>
+    <td align="center"><a href="/results?id={{survey.key.id}}" class="user" > View Results</a></td>
+	<td align="center"><a href="/perm?id={{survey.key.id}}" class="user"> Access Control</a></td>
 	<td align="center"> {{survey.author}} </td>
 </tr>
 {% endfor %}

@@ -1,7 +1,7 @@
 {% if user %}
-<table align="center" width="40%" border="1" cellpadding="5" cellspacing="5">
+<table align="center" width="40%" border="0" cellpadding="5" cellspacing="5">
 <tr >
-<th colspan="2" bgcolor="#e5ecf9">Admin Interface</th>
+<th colspan="2" class="header">Admin Interface</th>
 </tr>
 {% for administrator in administrators %}
 <form method="Post" action="/removeAdmin">
@@ -10,7 +10,7 @@
 		{{ administrator.username }}
     </td>
     <td>
-    	<input type="submit" {% if user.nickname == administrator.username or administrator.nickname == "abhinavsahai4u" %} disabled {% endif %} value="Revoke Access" />
+    	<input type="submit" {% if user.nickname == administrator.username or administrator.username == "abhinavsahai4u" %} disabled {% endif %} value="Revoke Access" class="button-revoke"/>
     </td>
 </tr>
 </form>
@@ -27,7 +27,7 @@
 </tr>
 <tr >
 <th colspan="2">
-    <input type="submit" value="Grant Access"  />
+    <input type="submit" value="Grant Access" class="button-grant" />
     </th>
 </form>
 </tr>

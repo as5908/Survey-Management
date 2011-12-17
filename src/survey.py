@@ -286,7 +286,7 @@ class CreateSurvey(webapp.RequestHandler):
 		
 		self.response.out.write(template.render('html/header.html', values))
 		self.response.out.write("""<center><h3>The survey %s has been successfully created. 
-		Please visit <a href="/view">Manage Survey</a> to add questions</h3></center>""" % survey_name)
+		Please visit <a href="/manageSurvey">Manage Survey</a> to add questions</h3></center>""" % survey_name)
 		self.response.out.write(template.render('html/footer.html', ""))
 
 class EditSurvey(webapp.RequestHandler):
@@ -362,7 +362,7 @@ class DeleteSurvey(webapp.RequestHandler):
 				question.delete()
 		
 			survey.delete()
-			self.redirect("/view")
+			self.redirect("/manageSurvey")
 		else :
 			self.redirect("error?code=2")
 
@@ -513,7 +513,7 @@ class AddQuestion(webapp.RequestHandler):
 		#Remove extra lines and spaces
 		answerchoices = self.request.get('answers').strip()
 		answers = answerchoices.splitlines(0)
-		ques = QuestionModel(author=user,
+		ques = QuestionModel(author=survey.author,
 							sid=surveyid,
 							nick = user.nickname(),
 							surveyname=survey.surveyname,
@@ -552,7 +552,7 @@ class UpdateQuestion(webapp.RequestHandler):
 				result.delete()
 			question.delete()"""
 		else :
-			ques = QuestionModel(author=user,
+			ques = QuestionModel(author=survey.author,
 								sid = surveyid,
 								nick = user.nickname(),
 								surveyname=survey.surveyname,

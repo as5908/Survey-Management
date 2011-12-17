@@ -5,7 +5,7 @@
 <link rel="stylesheet" type="text/css" href="css/main.css"/>
 <title>{{ active }}</title>
 </head>
-<body>
+<body background="images/website_background.jpg">
 <h1 align="center"><!--Survey-Monk--></h1>
 {% if user %}
 Welcome {{user.nickname}}, 
@@ -13,7 +13,7 @@ Welcome {{user.nickname}},
 	{% if lastLogin  %} you last accessed this page on {{ lastLogin }} 
 	{% else %} you are logging in for the first time{% endif %}
 {% endif %}
-<div align="right"><form method="POST" action="/search"><input type="image" width="20" height="20" src="images/search.jpg" > <input type="text" name="searchfield"/></form></div>
+<div align="right"><form method="POST" action="/search"><input type="submit" value="Search" class="search"/> <input type="text" name="searchfield"/></form></div>
 <div id="nav" >
     <ul>
     	<li ><a href="/homepage" {% if active == "homepage" %} class="active" {% endif %}>Home</a></li>
