@@ -3,10 +3,21 @@
 <form method="post" action="/changeN">
 <tr >
 	<th>Survey Name<input type="hidden" name="surveyid" value="{{survey.key.id}}" /></th>
-    <td ><input type="text" name="surveyname" value="{{survey.surveyname}}" /></td>
-    <td><input type="submit" value="change name"></td>
+	<td ><input type="text" name="surveyname" value="{{survey.surveyname}}" /></td>
+</tr>
+<tr>
+	<th>Expiry Date</th>
+	<td >
+		<input name="expiry" id="expiry" type="text" size="16" class="date-pick" readonly value="{{survey.expiry|date:"Y-m-d"}}">
+		<button onClick="javascript:clearbox('expiry');return false" name="clear" class="clear" title="Click to clear date">Clear</button>
+    </td>
+<tr >
+<tr>
+	<th colspan="2"><input type="submit" class="myButton" value="Update name/expiry" title="Click to update" onClick="return verify()"></th>
 </tr>
 </form>
+</table>
+<table align="center" width="40%" border="0" cellpadding="5" cellspacing="5">
 {% for question in questions %}
 <form name="editsurvey" method="post" action="/updateQ">
 <tr>
@@ -26,12 +37,12 @@
 </td>
 </tr>
 <tr>
-	<td><input type="submit" value="Update Question"></td></form>
+	<td><input type="submit" class="button-grant" value="Update Question" title="Click to Update Question {{ forloop.counter }}"></td></form>
     <td>
     	<form method="post" action="/deleteQ">
         <input type="hidden" name="questionid" value="{{question.key.id}}" />
         <input type="hidden" name="surveyid" value="{{survey.key.id}}" />
-        <input type="submit" value="Delete Question" />
+        <input type="submit" class="button-revoke" title="Click to delete Question {{ forloop.counter }}" value="Delete Question" />
 		</form>
     </td>
 </tr>

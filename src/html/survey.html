@@ -1,17 +1,17 @@
 {% if user %}
 <table align="center" width="40%"  border="0">
 <!-- Already Voted -->
-
+<tr><th colspan="2" >{{ surveyname }}</th></tr>
 {% for key,value in votedQA.items %}
 	{% if forloop.first %}
-    <tr><th colspan="2">You have already voted for following questions</th></tr>
+    <tr><th colspan="2" class="header">You have already voted for following questions</th></tr>
     {% endif %}
 	<tr>
-    	<td align="right" ><b>Question:</b></td>
-        <td> {{key.questiondes}}</td>
+    	<td align="right" width="20%" ><b>Question:</b></td>
+        <td align="left"> {{key.questiondes}}</td>
     </tr>
     <tr>
-    	<td align="right">You selected: </td><td>{{value}}</td>
+    	<td align="right">You selected: </td><td align="left">{{value}}</td>
     </tr>
 {% endfor %}
 
@@ -19,7 +19,7 @@
 
 {% for question in nonVotedQ %}
 {% if forloop.first %}
-<tr><th colspan="2">Please vote for following questions<input type="hidden" name="id" value="{{id}}" />
+<tr><th colspan="2" class="header">Please vote for following questions<input type="hidden" name="id" value="{{id}}" />
 </th></tr>
 {% endif %}
 <tr>
@@ -44,8 +44,12 @@
 </tr>
 {% endif %}
 {% endfor %}
-{% if nonVotedQ|length == 0 or admin == "true" %}
+{% if nonVotedQ|length == 0 %}
 <tr><td colspan="2" align="center">You have completed the survey.Please click <a href="/results?id={{ id }}">here</a> to view results</td></tr>
+{% else %}
+	{%if admin == "true" %}
+<tr><td colspan="2" align="center">Please click <a href="/results?id={{ id }}">here</a> to view results</td></tr>
+	{% endif %}
 {% endif %}
 </table>
 {% endif %}

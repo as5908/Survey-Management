@@ -1,0 +1,27 @@
+
+input.dp-applied {
+	width: 140px;
+	float: left;
+}
+
+a.dp-choose-date {
+	float: left;
+	width: 16px;
+	height: 16px;
+	padding: 0;
+	margin: 5px 3px 0;
+	display: block;
+	text-indent: -2000px;	
+	background: url(../images/calendar.png) no-repeat; 
+}
+
+#calendar-me {
+	margin: 20px;
+}
+pre.sourcecode {
+	border: 2px dashed #ccc;
+	padding: 10px;
+	width: 734px;
+	overflow: auto;
+	margin: 0 0 20px;
+}

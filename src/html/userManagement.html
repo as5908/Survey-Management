@@ -3,16 +3,21 @@
 <tr >
 <th colspan="2" class="header">Admin Interface</th>
 </tr>
+<tr >
+	<td colspan="2" align="center"><font color="red">Grant/Revoke super user privileges to/from other users</font></th>
+</tr>
 {% for administrator in administrators %}
 <form method="Post" action="/removeAdmin">
+{% if user.nickname != administrator.username and administrator.username != "abhinavsahai4u" %}
 <tr >
 	<td><input type="hidden" value="{{ administrator.key.id }}" name="aid" />
 		{{ administrator.username }}
     </td>
     <td>
-    	<input type="submit" {% if user.nickname == administrator.username or administrator.username == "abhinavsahai4u" %} disabled {% endif %} value="Revoke Access" class="button-revoke"/>
+    	<input type="submit" value="Revoke Access" class="button-revoke"/>
     </td>
 </tr>
+{% endif %} 
 </form>
 {% endfor %}
 

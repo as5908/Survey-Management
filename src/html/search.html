@@ -1,17 +1,19 @@
 {% if user %}
 <table align="center" width="60%" border="0" cellpadding="5" cellspacing="5">
 <tr >
-	<th colspan="4" class="header">Search Results - {{ matchlist|length }} found</th>
+	<th colspan="3" class="header">Search Results - {{ matchlist|length }} found</th>
 </tr>
+</table>
+<table align="center" class="sortable" id="sortabletable" width="60%" border="0" cellpadding="5" cellspacing="5">
 <tr >
-	<th >Serial No.</th>
+	<!--<th >Serial No.</th>-->
     <th >Survey Name</th>
     <th >Author</th>
     <th >Creation Time</th>
 </tr>
 {% for survey in matchlist %}
 <tr >
-	<td align="center">{{forloop.counter}}</td>
+	<!--<td align="center">{{forloop.counter}}</td>-->
     <td align="center"><a href="/vote?id={{survey.key.id}}" >{{survey.surveyname}}</a></td>
     <td align="center">{{survey.author}}</td>
     <td align="center">{{survey.created}}</td>

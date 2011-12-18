@@ -3,17 +3,64 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html\r\n\r\n; charset=utf-8" />
 <link rel="stylesheet" type="text/css" href="css/main.css"/>
+<link rel="stylesheet" type="text/css" href="css/public.css"/>
+<link rel="stylesheet" type="text/css" href="css/datePicker.css"/>
+<link rel="stylesheet" type="text/css" href="css/icon.css"/>
+<script src="javascripts/functions.js" type="text/javascript"></script>
+<script type="text/javascript" src="jquery/jquery-1.6.2.min.js"></script>
+<script type="text/javascript" src="jquery/date.js"></script>
+<script type="text/javascript" src="jquery/jquery.datePicker.js"></script>
+<script type="text/javascript" charset="utf-8">
+
+/*$(function()
+{
+	$('.date-pick').datePicker();$('.date-pick').datePicker().val(new Date().asString()).trigger('change');
+});*/
+$(function()
+{
+	$('.date-pick').datePicker(
+		{
+			startDate:new Date().asString(),	
+			endDate:'05/07/2012'
+		}
+	);
+});
+</script>
 <title>{{ active }}</title>
 </head>
-<body background="images/website_background.jpg">
-<h1 align="center"><!--Survey-Monk--></h1>
-{% if user %}
-Welcome {{user.nickname}}, 
-{% if active == "home" %}
-	{% if lastLogin  %} you last accessed this page on {{ lastLogin }} 
-	{% else %} you are logging in for the first time{% endif %}
-{% endif %}
-<div align="right"><form method="POST" action="/search"><input type="submit" value="Search" class="search"/> <input type="text" name="searchfield"/></form></div>
+<!--background="images/website_background.jpg" --> 
+<body onLoad="updateClock(); setInterval('updateClock()', 1000 )" bgcolor="#CCC">
+
+<table width="100%">
+<tr>
+<td><h2 align="center">Survey Management System</h2>
+</td>
+</tr>
+<tr>
+<td>
+	<div align="right" style="text-align: right;"> 
+	Local Time:
+	<span id="clock">&nbsp;</span> 
+	</div>
+</td>
+</tr>
+</table>
+
+<table width="100%">
+	<td>
+	{% if user %}
+	Welcome {{user.nickname}}, 
+	{% if active == "home" %}
+		{% if lastLogin  %} you last accessed this page on {{ lastLogin }} (UTC)
+		{% else %} you are logging in for the first time{% endif %}
+	{% endif %}
+	</td>
+<td>
+	<div align="right"><form method="POST" action="/search"><input type="submit" onClick ="return verify('search')" value="Search" class="search"/> <input type="text" name="searchfield" id="search" /></form></div>
+</td>
+</table>
+
+
 <div id="nav" >
     <ul>
     	<li ><a href="/homepage" {% if active == "homepage" %} class="active" {% endif %}>Home</a></li>
@@ -26,6 +73,8 @@ Welcome {{user.nickname}},
 		<li><a href="/addQ" {% if active == "addQ" %} class="active" {% endif %}>Add Questions</a>
         </li>
 		<li><a href="" {% if active == "edit" %} class="active" {% else %} class="hide" {% endif %}>Edit Survey</a>
+        </li>
+		<li><a href="/popS" {% if active == "pop" %} class="active" {% endif %}>Popular Surveys</a>
         </li>
 		{% if admin == "true" %}
 		<li><a href="/userM" {% if active == "userM" %} class="active" {% endif %}>User Management</a>

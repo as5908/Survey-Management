@@ -1,27 +1,29 @@
 {% if user %}
-<table align="center" width="60%" border="0" cellpadding="5" cellspacing="5">
+<table align="center"  width="80%" border="0" cellpadding="5" cellspacing="5">
 <tr >
-	<th colspan="8" class="header">List Of All Available Surveys</th>
+	<th colspan="8" class="header">Manage Surveys</th>
 </tr>
+</table>
+<table align="center" class="sortable" id="sortabletable" width="80%" border="0" cellpadding="5" cellspacing="5">
 <tr >
-	<th align="center">Serial</th>
+	<!--<th align="center">Serial</th>-->
     <th align="center">Survey Name</th>
-    <th align="center">Add Questions</th>
-    <th align="center">Edit Survey</th>
-    <th align="center">Delete Survey</th>
-    <th align="center">View Results</th>
-	<th align="center">Access Control</th>
+    <th class="unsortable" align="center">Add Questions</th>
+    <th class="unsortable" align="center">Edit Survey</th>
+    <th class="unsortable" align="center">Delete Survey</th>
+    <th class="unsortable" align="center">View Results</th>
+	<th class="unsortable" align="center">Access Control</th>
 	<th align="center">Author</th>
 </tr>
 {% for survey in surveys %}
 <tr >
-	<td align="center">{{forloop.counter}}</td>
+	<!--<td align="center">{{forloop.counter}}</td>-->
     <td align="center">{{survey.surveyname}}</td>
-    <td align="center"><a href="/addQ?id={{survey.key.id}}" class="user"> Add Questions</a></td>
-    <td align="center"><a href="/edit?id={{survey.key.id}}" class="user"> Edit Survey </a></td>
-    <td align="center"><a href="/deleteS?id={{survey.key.id}}" class="user"> Delete Survey</a></td>
-    <td align="center"><a href="/results?id={{survey.key.id}}" class="user" > View Results</a></td>
-	<td align="center"><a href="/perm?id={{survey.key.id}}" class="user"> Access Control</a></td>
+    <td align="center"><a href="/addQ?id={{survey.key.id}}" class="user" title="Add Questions to {{survey.surveyname}}"> Add Questions</a></td>
+    <td align="center"><a href="/edit?id={{survey.key.id}}" class="user" title="Edit {{survey.surveyname}}"> Edit Survey </a></td>
+    <td align="center"><a href="/deleteS?id={{survey.key.id}}" class="user" title="Delete {{survey.surveyname}}"> Delete Survey</a></td>
+    <td align="center"><a href="/results?id={{survey.key.id}}" class="user" title="View {{survey.surveyname}}"> View Results</a></td>
+	<td align="center"><a href="/perm?id={{survey.key.id}}" class="user" title="Manage access permissions of {{survey.surveyname}}"> Access Control</a></td>
 	<td align="center"> {{survey.author}} </td>
 </tr>
 {% endfor %}
