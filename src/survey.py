@@ -149,53 +149,59 @@ class UserManagement(webapp.RequestHandler):
 			url_linktext = 'Logout'
 			if isAdmin(user):
 				admin = "true"
+				administrators = db.GqlQuery("SELECT * FROM AdminModel")
+				values = {'admin':admin,
+					'administrators':administrators,
+		            'active': "userM",
+		            'user':user,
+		            'url':url,
+		            'url_linktext':url_linktext				  
+				}
 				#self.response.out.write("Admin Interface")
 			else :
 				self.redirect("/error?code=2")
-		administrators = db.GqlQuery("SELECT * FROM AdminModel")
-		values = {'admin':admin,
-			'administrators':administrators,
-            'active': "userM",
-            'user':user,
-            'url':url,
-            'url_linktext':url_linktext				  
-		}
-		
+		else :
+			values = {'admin':admin,
+					'user':user,
+            		'url':url,
+              		'url_linktext':url_linktext
+              		}
 		self.response.out.write(template.render('html/header.html', values))
 		self.response.out.write(template.render('html/userManagement.html', values))
 		self.response.out.write(template.render('html/footer.html', ""))
-
 #Revoking admin rights
 class RemoveAdmin(webapp.RequestHandler):
 	def post(self):
 		user = users.get_current_user()
 		raw_id = self.request.get('aid')
-		if not raw_id or not user or not isAdmin(user) :
+		if not raw_id and not user and not isAdmin(user) :
 			self.redirect("/error?code=2")
-		adminid = long(raw_id)
-		
-		#Can't remove me as admin
-		adminObj = AdminModel.get_by_id(adminid)
-		if adminObj.username != "abhinavsahai4u":
-			adminObj.delete()
-		self.redirect("/userM")
+		else :
+			adminid = long(raw_id)
+			
+			#Can't remove me as admin
+			adminObj = AdminModel.get_by_id(adminid)
+			if adminObj.username != "abhinavsahai4u":
+				adminObj.delete()
+			self.redirect("/userM")
 
 #Add new users as site admin
 class AddAdmin(webapp.RequestHandler):
 	def post(self):
 		user = users.get_current_user()
 		raw_name = self.request.get('nickname')
-		if not raw_name or not user or not isAdmin(user) :
+		if not raw_name and not user and not isAdmin(user) :
 			self.redirect("/error?code=2")
-		
-		username = str(raw_name)
-		#check to ensure there is no previous entry
-		check = AdminModel.gql("WHERE username=:1",username)
-		if check.count() != 0: #already added
-			self.redirect("/error?code=4")
-		adminObj = AdminModel(username=username)
-		adminObj.put()
-		self.redirect("/userM")
+		else :
+			username = str(raw_name)
+			#check to ensure there is no previous entry
+			check = AdminModel.gql("WHERE username=:1",username)
+			if check.count() != 0: #already added
+				self.redirect("/error?code=4")
+			else :
+				adminObj = AdminModel(username=username)
+				adminObj.put()
+				self.redirect("/userM")
 
 #A case insensitive search to find matching surveys
 class Search(webapp.RequestHandler):
@@ -203,45 +209,53 @@ class Search(webapp.RequestHandler):
 		user = users.get_current_user()
 		url = users.create_login_url(self.request.uri)
 		url_linktext = 'Login'
+		admin = "false"
 		if user:
 			url = users.create_logout_url(self.request.uri)
 			url_linktext = 'Logout'
 			if isAdmin(user):
 				admin = "true"
 				#self.response.out.write("Admin Interface")
-		searchword = str(self.request.get('searchfield')).lower()
-		if admin == "true":
-			surveys = db.GqlQuery("SELECT * FROM SurveyModel")
-		else :
-			surveys = db.GqlQuery("SELECT * FROM SurveyModel where visibility=True")		
-		
-		matchlist = []
-		for survey in surveys :
-			name = survey.surveyname.lower()
-			if name.find(searchword,0,len(name)) != -1 :
-				matchlist.append(survey)
-				
-		if admin == "false":
-			queryAccess = AccessModel.gql("WHERE nick=:1",user.nickname())
-			for result in queryAccess:
-				survey = SurveyModel.get_by_id(result.sid)
+			searchword = str(self.request.get('searchfield')).lower()
+			if admin == "true":
+				surveys = db.GqlQuery("SELECT * FROM SurveyModel")
+			else :
+				surveys = db.GqlQuery("SELECT * FROM SurveyModel where visibility=True")		
+			
+			matchlist = []
+			for survey in surveys :
 				name = survey.surveyname.lower()
 				if name.find(searchword,0,len(name)) != -1 :
 					matchlist.append(survey)
-
-		values = {
-			'surveys':surveys,
-			'matchlist':matchlist,
-            'active': "search",
-            'user':user,
-            'url':url,
-            'url_linktext':url_linktext				  
-		}
-		
+					
+			if admin == "false":
+				queryAccess = AccessModel.gql("WHERE nick=:1",user.nickname())
+				for result in queryAccess:
+					survey = SurveyModel.get_by_id(result.sid)
+					name = survey.surveyname.lower()
+					if name.find(searchword,0,len(name)) != -1 :
+						matchlist.append(survey)
+	
+			values = {
+				'surveys':surveys,
+				'matchlist':matchlist,
+	            'active': "search",
+	            'user':user,
+	            'url':url,
+	            'url_linktext':url_linktext				  
+			}
+		else :
+			values = {'admin':admin,
+					'user':user,
+	        		'url':url,
+	          		'url_linktext':url_linktext
+	          	}
 		self.response.out.write(template.render('html/header.html', values))
 		self.response.out.write(template.render('html/search.html', values))
 		self.response.out.write(template.render('html/footer.html', ""))
-	
+		
+	def get(self):
+		self.redirect("/")
 
 class CreateSurvey(webapp.RequestHandler):
 	def get(self):
@@ -286,26 +300,28 @@ class CreateSurvey(webapp.RequestHandler):
 		}
 		survey_name = self.request.get('surveyname')
 		raw_expiry = self.request.get('expiry')
-		if not survey_name or not raw_expiry :
-			self.redirect("error?code=2")
-		if raw_expiry:
-			expiry = datetime.date(datetime.strptime(str(raw_expiry), '%Y-%m-%d'))
+		if not survey_name :
+			self.redirect("error?code=3")
 		else :
-			expiry = datetime.date(datetime.strptime('2012-12-31', '%Y-%m-%d'))
-		#check whether the survey name already exists
-		checkname = SurveyModel.gql("WHERE surveyname=:1 and author=:2",survey_name,user)
-		if checkname.count() !=0 : #survey exists with that name
-			self.redirect("error?code=1")
-		survey = SurveyModel(author=user,
-							nick = user.nickname(),
-							surveyname=survey_name,
-							expiry=expiry)
-		survey.put()
-		
-		self.response.out.write(template.render('html/header.html', values))
-		self.response.out.write("""<center><h3>The survey %s has been successfully created. 
-		Please visit <a href="/manageSurvey">Manage Survey</a> to add questions</h3></center>""" % survey_name)
-		self.response.out.write(template.render('html/footer.html', ""))
+			if raw_expiry:
+				expiry = datetime.date(datetime.strptime(str(raw_expiry), '%Y-%m-%d'))
+			else :
+				expiry = datetime.date(datetime.strptime('2012-12-31', '%Y-%m-%d'))
+			#check whether the survey name already exists
+			checkname = SurveyModel.gql("WHERE surveyname=:1 and author=:2",survey_name,user)
+			if checkname.count() !=0 : #survey exists with that name
+				self.redirect("error?code=1")
+			else :
+				survey = SurveyModel(author=user,
+									nick = user.nickname(),
+									surveyname=survey_name,
+									expiry=expiry)
+				survey.put()
+				
+				self.response.out.write(template.render('html/header.html', values))
+				self.response.out.write("""<center><h3>The survey %s has been successfully created. 
+				Please visit <a href="/manageSurvey">Manage Survey</a> to add questions</h3></center>""" % survey_name)
+				self.response.out.write(template.render('html/footer.html', ""))
 
 class EditSurvey(webapp.RequestHandler):
 	def get(self):
@@ -320,28 +336,38 @@ class EditSurvey(webapp.RequestHandler):
 				admin = "true"
 				#self.response.out.write("Admin Interface")
 
-		raw_id = self.request.get('id')
-		if not raw_id :
-			self.redirect("/error?code=2")
-		surveyid = int(raw_id)
-		survey = SurveyModel.get_by_id(surveyid)
-		#user has to be the author or admin
-		if not authUser(user, survey.author) and not isAdmin(user) :
-			self.redirect("/error?code=2")
-		questions = db.GqlQuery("SELECT * FROM QuestionModel where sid =:1 and author=:2",
-							surveyid, survey.author);
-
-		values = {'admin': admin,
-			'survey':survey,
-			'questions': questions,
-            'active': "edit",
-            'url':url,
-            'user':user,
-            'url_linktext':url_linktext	
-		}
+			raw_id = self.request.get('id')
+			if not raw_id :
+				self.redirect("/error?code=2")
+			else :
+				surveyid = int(raw_id)
+				survey = SurveyModel.get_by_id(surveyid)
+				#user has to be the author or admin
+				if not authUser(user, survey.author) and not isAdmin(user) :
+					self.redirect("/error?code=2")
+				else :
+					questions = db.GqlQuery("SELECT * FROM QuestionModel where sid =:1 and author=:2",
+										surveyid, survey.author);
+			
+					values = {'admin': admin,
+						'survey':survey,
+						'questions': questions,
+			            'active': "edit",
+			            'url':url,
+			            'user':user,
+			            'url_linktext':url_linktext	
+					}
+		else :
+			values = {'admin':admin,
+					'user':user,
+            		'url':url,
+              		'url_linktext':url_linktext
+              		}
 		self.response.out.write(template.render('html/header.html', values))
 		self.response.out.write(template.render('html/edit.html', values))
 		self.response.out.write(template.render('html/footer.html', ""))
+		
+				
 
 class DeleteQuestion(webapp.RequestHandler):
 	def post(self):
@@ -363,6 +389,8 @@ class DeleteQuestion(webapp.RequestHandler):
 			self.redirect('/edit?' + urllib.urlencode({'id':surveyid }))
 		else :
 			self.redirect("/error?code=2")
+	def get(self):
+		self.redirect("/")
 
 class DeleteSurvey(webapp.RequestHandler):
 	def get(self):
@@ -393,46 +421,54 @@ class RemoveUser(webapp.RequestHandler):
 		raw_id = self.request.get('id')
 		if not raw_id or not user:
 			self.redirect("/error?code=2")
-		surveyid = int(raw_id)
-		survey = SurveyModel.get_by_id(surveyid)
-		#user has to be the author or admin
-		if not authUser(user, survey.author) and not isAdmin(user) :
-			self.redirect("/error?code=2")
-		nickname = self.request.get('nickname')
-		if not nickname:
-			self.redirect("/error?code=2")
-		results = AccessModel.gql("WHERE sid=:1 AND nick=:2", surveyid,nickname)
-		for result in results :
-			result.delete()
-		self.redirect("/perm?id=%s" % surveyid)
-
-class AddUser(webapp.RequestHandler):
-	def post(self):
-		user = users.get_current_user()
-		raw_id = self.request.get('id')
-		if not raw_id :
-			self.redirect("/error?code=2")
-		surveyid = int(raw_id)
-		nickname = str(self.request.get('nickname'))
-		if not nickname:
-			self.redirect("/error?code=2")
-		#check to ensure there is no previous entry
-		check = AccessModel.gql("WHERE sid=:1 AND nick=:2",surveyid,nickname)
-		#self.response.out.write(check.count())
-		if check.count() != 0:
-			self.redirect("/error?code=4")
-		else :
+		else:
+			surveyid = int(raw_id)
 			survey = SurveyModel.get_by_id(surveyid)
 			#user has to be the author or admin
 			if not authUser(user, survey.author) and not isAdmin(user) :
 				self.redirect("/error?code=2")
-			if survey.visibility == True:
-				survey.visibility = False
-				survey.put()
-			access = AccessModel(sid=surveyid,
-						nick=nickname)
-			access.put()
-			self.redirect("/perm?id=%s" % surveyid)
+			else :
+				nickname = self.request.get('nickname')
+				if not nickname:
+					self.redirect("/error?code=2")
+				else:
+					results = AccessModel.gql("WHERE sid=:1 AND nick=:2", surveyid,nickname)
+					for result in results :
+						result.delete()
+					self.redirect("/perm?id=%s" % surveyid)
+	
+class AddUser(webapp.RequestHandler):
+	def post(self):
+		user = users.get_current_user()
+		raw_id = self.request.get('id')
+		if raw_id :
+			surveyid = int(raw_id)
+			nickname = str(self.request.get('nickname'))
+			if not nickname:
+				self.redirect("/error?code=2")
+			else :
+				#check to ensure there is no previous entry
+				check = AccessModel.gql("WHERE sid=:1 AND nick=:2",surveyid,nickname)
+				#self.response.out.write(check.count())
+				if check.count() != 0:
+					self.redirect("/error?code=4")
+				else :
+					survey = SurveyModel.get_by_id(surveyid)
+					#user has to be the author or admin
+					if not authUser(user, survey.author) and not isAdmin(user) :
+						self.redirect("/error?code=2")
+					else :
+						if survey.visibility == True:
+							survey.visibility = False
+							survey.put()
+						access = AccessModel(sid=surveyid,
+									nick=nickname)
+						access.put()
+						self.redirect("/perm?id=%s" % surveyid)
+		else :
+			self.redirect("/error?code=6")
+	def get(self):
+		self.redirect("/home")
 		
 class MakePublic(webapp.RequestHandler):
 	def post(self):
@@ -440,18 +476,22 @@ class MakePublic(webapp.RequestHandler):
 		raw_id = self.request.get('id')
 		if not raw_id:
 			self.redirect("/error?code=2")
-		surveyid = int(raw_id)
-		survey = SurveyModel.get_by_id(surveyid)
-		if not authUser(user, survey.author) or not isAdmin(user) :
-			self.redirect("/error?code=2")
-		#check to ensure there is no previous entry
-		results = AccessModel.gql("WHERE sid=:1",surveyid)
-		for result in results :
-			result.delete()
-		survey = SurveyModel.get_by_id(surveyid)
-		survey.visibility = True
-		survey.put()
-		self.redirect("/perm?id=%s" % surveyid)
+		else :
+			surveyid = int(raw_id)
+			survey = SurveyModel.get_by_id(surveyid)
+			if user == survey.author or isAdmin(user) :
+				#check to ensure there is no previous entry
+				results = AccessModel.gql("WHERE sid=:1",surveyid)
+				for result in results :
+					result.delete()
+				survey = SurveyModel.get_by_id(surveyid)
+				survey.visibility = True
+				survey.put()
+				self.redirect("/perm?id=%s" % surveyid)
+			else :
+				self.redirect("/error?code=2")
+	def get(self):
+		self.redirect("/")
 
 class ManagePermission(webapp.RequestHandler):
 	def get(self):
@@ -469,26 +509,27 @@ class ManagePermission(webapp.RequestHandler):
 		raw_id = self.request.get('id')
 		if not raw_id:
 			self.redirect("/error?code=2")
-		surveyid = int(raw_id)
-		survey = SurveyModel.get_by_id(surveyid)
-		existingUsers = []
-		if survey.visibility == True:
-			visibility = "public"
 		else :
-			visibility = "limited"
-			existingUsers = AccessModel.gql("WHERE sid=:1", surveyid)
-
-		values = {'admin': admin,
-			'visibility':visibility,
-			'usernames' : existingUsers,
-			'survey':survey,
-            'user':user,
-            'url':url,
-            'url_linktext':url_linktext				  
-		}
-		self.response.out.write(template.render('html/header.html', values))
-		self.response.out.write(template.render('html/manageperm.html', values))
-		self.response.out.write(template.render('html/footer.html', ""))
+			surveyid = int(raw_id)
+			survey = SurveyModel.get_by_id(surveyid)
+			existingUsers = []
+			if survey.visibility == True:
+				visibility = "public"
+			else :
+				visibility = "limited"
+				existingUsers = AccessModel.gql("WHERE sid=:1", surveyid)
+	
+			values = {'admin': admin,
+				'visibility':visibility,
+				'usernames' : existingUsers,
+				'survey':survey,
+	            'user':user,
+	            'url':url,
+	            'url_linktext':url_linktext				  
+			}
+			self.response.out.write(template.render('html/header.html', values))
+			self.response.out.write(template.render('html/manageperm.html', values))
+			self.response.out.write(template.render('html/footer.html', ""))
 
 class ChangeSurvey(webapp.RequestHandler):
 	def post(self):
@@ -558,24 +599,40 @@ class AddQuestion(webapp.RequestHandler):
 	def post(self):
 		user = users.get_current_user()
 		#surveys = SurveyModel.gql("Where author=:1",user)
-		raw_id = self.request.get('surveyid')
+		raw_id = str(self.request.get('surveyid'))
+		
 		surveyid = int(raw_id)
-		survey = SurveyModel.get_by_id(surveyid)
-		question = self.request.get('questiondes')
-				
-		#Remove extra lines and spaces
-		answerchoices = self.request.get('answers').strip()
-		answers = answerchoices.splitlines(0)
-		if not authUser(user, survey.author) and not isAdmin(user):
-			self.redirect("/error?code=2") 
-		ques = QuestionModel(author=survey.author,
-							sid=surveyid,
-							nick = user.nickname(),
-							surveyname=survey.surveyname,
-								questiondes=question,
-								answerlist=answers)
-		ques.put()
-		self.redirect('/edit?' + urllib.urlencode({'id':surveyid }))
+		if surveyid == -1:
+			self.redirect('/error?code=3')
+		else :
+			survey = SurveyModel.get_by_id(surveyid)
+			question = self.request.get('questiondes')
+			raw_answers = self.request.get('answers')
+			if not question or not raw_answers:
+				self.redirect('/error?code=3')
+			else :
+				#Remove extra lines and spaces
+				answerchoices = raw_answers.strip()
+				answers = answerchoices.splitlines(0)
+				anslist = []
+				s = set()
+				for ans in answers :
+					if ans.strip() != ""  :
+						if ans not in s:#No same answer choice twice	
+							anslist.append(ans)
+							s.add(ans)					
+							
+					
+				if not authUser(user, survey.author) and not isAdmin(user):
+					self.redirect('/error?code=2') 
+				ques = QuestionModel(author=survey.author,
+									sid=surveyid,
+									nick = user.nickname(),
+									surveyname=survey.surveyname,
+										questiondes=question,
+										answerlist=anslist)
+				ques.put()
+				self.redirect('/edit?' + urllib.urlencode({'id':surveyid }))
 		
 class UpdateQuestion(webapp.RequestHandler):
 	def post(self):
@@ -586,37 +643,44 @@ class UpdateQuestion(webapp.RequestHandler):
 		survey = SurveyModel.get_by_id(surveyid);
 		question = self.request.get('questiondes')
 		
-		if not authUser(user, survey.author) and not isAdmin(user):
+		if not authUser(user, survey.author) and not isAdmin(user) :
 			self.redirect("/error?code=2")
-		#Remove extra lines and spaces
-		answerchoices = self.request.get('answers').strip()
-		answers = answerchoices.splitlines(0)
-		todo = str(self.request.get('todo'))
-		
-		if todo == "update":
-			self.response.out.write(todo)
-			questionid = int(self.request.get('questionid'))
-			questionEntity = QuestionModel.get_by_id(questionid)
-			questionEntity.answerlist = answers
-			questionEntity.questiondes = question
-			questionEntity.put()
-			#delete all voting details
-			"""votes = VoteModel.gql("WHERE qid=:1",questionid)
-			for vote in votes:
-				vote.delete()
-			results = ResultModel.gql("WHERE qid=:1",questionid)
-			for result in results:
-				result.delete()
-			question.delete()"""
 		else :
-			ques = QuestionModel(author=survey.author,
-								sid = surveyid,
-								nick = user.nickname(),
-								surveyname=survey.surveyname,
-									questiondes=question,
-									answerlist=answers)
-			ques.put()
-		self.redirect('/edit?' + urllib.urlencode({'id':surveyid }))
+		#Remove extra lines and spaces
+			answerchoices = self.request.get('answers').strip()
+			answers = answerchoices.splitlines(0)
+			anslist = []
+			s = set()
+			for ans in answers :
+				if ans.strip() != "":	
+					if ans not in s:#No same answer choice twice	
+						anslist.append(ans)
+						s.add(ans)	
+			todo = str(self.request.get('todo'))
+			
+			if todo == "update":
+				self.response.out.write(todo)
+				questionid = int(self.request.get('questionid'))
+				questionEntity = QuestionModel.get_by_id(questionid)
+				questionEntity.answerlist = anslist
+				questionEntity.questiondes = question
+				questionEntity.put()
+				#delete all voting details for modified questions
+				votes = VoteModel.gql("WHERE qid=:1",questionid)
+				for vote in votes:
+					vote.delete()
+				results = ResultModel.gql("WHERE qid=:1",questionid)
+				for result in results:
+					result.delete()
+			else :
+				ques = QuestionModel(author=survey.author,
+									sid = surveyid,
+									nick = user.nickname(),
+									surveyname=survey.surveyname,
+										questiondes=question,
+										answerlist=answers)
+				ques.put()
+			self.redirect('/edit?' + urllib.urlencode({'id':surveyid }))
 
 class ManageSurvey(webapp.RequestHandler):
 	def get(self):
@@ -652,23 +716,23 @@ class Participate(webapp.RequestHandler):
 		url = users.create_login_url(self.request.uri)
 		url_linktext = 'Login'
 		admin = "false"
+		surveys = []
 		if user:
 			url = users.create_logout_url(self.request.uri)
 			url_linktext = 'Logout'
 			if isAdmin(user):
 				admin = "true"
 				#self.response.out.write("Admin Interface")
-		
-		if admin == "true":
-			surveys = db.GqlQuery("SELECT * FROM SurveyModel where expiry >=:1", date.today())
-		else :
-			surveys = SurveyModel.gql("where visibility=True and expiry >=:1", date.today())
-		
-		if admin == "false":
-			queryAccess = AccessModel.gql("WHERE nick=:1",user.nickname())
-			for result in queryAccess:
-				survey = SurveyModel.get_by_id(result.sid)
-				surveys.append(survey)
+			if admin == "true":
+				surveys = db.GqlQuery("SELECT * FROM SurveyModel where expiry >=:1", date.today())
+			else :
+				surveys = SurveyModel.gql("where visibility=True and expiry >=:1", date.today())
+			
+			if admin == "false":
+				queryAccess = AccessModel.gql("WHERE nick=:1",user.nickname())
+				for result in queryAccess:
+					survey = SurveyModel.get_by_id(result.sid)
+					surveys.append(survey)
 				
 		values = {'admin': admin,
 			'surveys': surveys,
@@ -683,6 +747,31 @@ class Participate(webapp.RequestHandler):
 
 class ErrorHandle(webapp.RequestHandler):
 	def get(self):
+		user = users.get_current_user()
+		url = users.create_login_url(self.request.uri)
+		url_linktext = 'Login'
+		admin = "false"
+		if user:
+			url = users.create_logout_url(self.request.uri)
+			url_linktext = 'Logout'
+			if isAdmin(user):
+				admin = "true"
+				#self.response.out.write("Admin Interface")
+
+		surveys = SurveyModel.gql("Where author=:1", user)
+		code = int(self.request.get('code'))
+
+		values = {'admin': admin,
+			'surveys': surveys,
+			'code':code,
+            'user':user,
+            'url':url,
+            'url_linktext':url_linktext
+		}
+		self.response.out.write(template.render('html/header.html', values))
+		self.response.out.write(template.render('html/error.html', values))
+		self.response.out.write(template.render('html/footer.html', ""))
+	def post(self):
 		user = users.get_current_user()
 		url = users.create_login_url(self.request.uri)
 		url_linktext = 'Login'
@@ -726,21 +815,21 @@ class ViewVotes(webapp.RequestHandler):
 		author = question.author
 		surveyid = question.sid
 		survey = SurveyModel.get_by_id(surveyid)
-		if not authUser(user,author) and admin == "false":
+		if not authUser(user,author) and admin == "false" and user:
 			self.redirect("/error?code=2")
-		Voters = VoteModel.gql("WHERE qid=:1",qid)
-
-		values = {'admin': admin,
-			'voters': Voters,
-			'question':question,
-			'survey':survey,
-            'user':user,
-            'url':url,
-            'url_linktext':url_linktext
-		}
-		self.response.out.write(template.render('html/header.html', values))
-		self.response.out.write(template.render('html/viewVotes.html', values))
-		self.response.out.write(template.render('html/footer.html', ""))
+		else :
+			Voters = VoteModel.gql("WHERE qid=:1",qid)
+			values = {'admin': admin,
+				'voters': Voters,
+				'question':question,
+				'survey':survey,
+	            'user':user,
+	            'url':url,
+	            'url_linktext':url_linktext
+			}
+			self.response.out.write(template.render('html/header.html', values))
+			self.response.out.write(template.render('html/viewVotes.html', values))
+			self.response.out.write(template.render('html/footer.html', ""))
 
 
 class ResultHandler(webapp.RequestHandler):
@@ -767,31 +856,32 @@ class ResultHandler(webapp.RequestHandler):
             'url_linktext':url_linktext
 		}
 		self.response.out.write(template.render('html/header.html', values))
-		self.response.out.write("""<table align="center"  width="40%%" >
-		<tr><th colspan="2" bgcolor="#0033FF"><font color="#FFF" >%s</font></th></tr>""" % survey_name)
-		
-		for question in questions:
-			answerlist = question.answerlist #All answer choices
-			qid = long(question.key().id())
-			questiondes = question.questiondes
-			if question.author == user or admin=="true":
-				self.response.out.write("""<tr >
-	<td colspan="6" align="center"><font color="red">Click on question name to view all the voters</font></th>
-</tr>""")
-				self.response.out.write("""<tr><td colspan="2" bgcolor="#e5ecf9"><b><a href="viewVotes?qid=%s">%s</a></b></td></tr>""" % (qid,questiondes))
-			else :
-				self.response.out.write("""<tr><td colspan="2" bgcolor="#e5ecf9"><b>%s</b></td></tr>""" %questiondes)
-			self.response.out.write("""<tr><td>Votes</td><td>Choices</td></tr>""")
-			for ans  in answerlist:
-				result = ResultModel.gql("WHERE answer=:1 AND qid=:2",ans,qid)
-				if result.count() > 0:
-					value = result.get().count
+		if user :
+			self.response.out.write("""<table align="center"  width="40%%" >
+			<tr><th colspan="2" bgcolor="#0033FF"><font color="#FFF" >%s</font></th></tr>""" % survey_name)
+			self.response.out.write("""<tr >
+		<td colspan="6" align="center"><font color="red">Click on question name to view all the voters</font></th>
+	</tr>""")
+			for question in questions:
+				answerlist = question.answerlist #All answer choices
+				qid = long(question.key().id())
+				questiondes = question.questiondes
+				if question.author == user or admin=="true":
+					
+					self.response.out.write("""<tr><td colspan="2" bgcolor="#e5ecf9"><b><a href="viewVotes?qid=%s">%s</a></b></td></tr>""" % (qid,questiondes))
 				else :
-					value = 0
-				self.response.out.write("""<tr><td>%s</td>""" %value)
-				self.response.out.write("""<td>%s</td></tr>""" %ans)
-			self.response.out.write("""<td colspan="2"><hr/></td></tr>""")
-		self.response.out.write("""</table>""")
+					self.response.out.write("""<tr><td colspan="2" bgcolor="#e5ecf9"><b>%s</b></td></tr>""" %questiondes)
+				self.response.out.write("""<tr><td>Votes</td><td>Choices</td></tr>""")
+				for ans  in answerlist:
+					result = ResultModel.gql("WHERE answer=:1 AND qid=:2",ans,qid)
+					if result.count() > 0:
+						value = result.get().count
+					else :
+						value = 0
+					self.response.out.write("""<tr><td>%s</td>""" %value)
+					self.response.out.write("""<td>%s</td></tr>""" %ans)
+				self.response.out.write("""<td colspan="2"><hr/></td></tr>""")
+			self.response.out.write("""</table>""")
 		self.response.out.write(template.render('html/footer.html', ""))
 
 
@@ -806,22 +896,17 @@ class StartSurvey(webapp.RequestHandler):
 			url_linktext = 'Logout'
 			if isAdmin(user):
 				admin = "true"
-				#self.response.out.write("Admin Interface")
-
-			
+				#self.response.out.write("Admin Interface")			
 		raw_id = self.request.get('id')
 		surveyid = int(raw_id)
 		survey = SurveyModel.get_by_id(surveyid)
 		author = survey.author
-		#votedQ=[]
 		nonVotedQ=[]
-		#votedA=[]
 		votedQA = {}
 		allQ = QuestionModel.gql("WHERE sid=:1 AND author=:2 ",surveyid,author)
 		total = allQ.count()
 		for question in allQ :
 			qid = long(question.key().id())
-			#self.response.out.write("qid-"+str(qid)+","+user)
 			queryVote = VoteModel.gql("WHERE qid=:1 AND voter=:2",qid,user)
 			if queryVote.count() == 0:#not voted yet
 				nonVotedQ.append(question)
@@ -849,41 +934,42 @@ class StartSurvey(webapp.RequestHandler):
 		raw_sid = self.request.get('id')
 		if raw_sid :
 			surveyid = int(raw_sid)
+			for x in range(1,total):
+				#update question Model entity
+				self.response.out.write(x)
+				raw_qid = self.request.get('qid'+str(x))
+				qid = int(raw_qid)
+				
+				raw_answer = self.request.get('answer'+str(x))
+				voter=user
+				if raw_answer :
+					#question = QuestionModel.get_by_id(qid)
+					answer = str(raw_answer)				
+					#confirm whether the voter is present or not
+					confirm = VoteModel.gql("WHERE qid=:1 AND voter=:2",qid,user)
+					self.response.out.write(str(confirm.count())+" where qid " + str(qid) + str(voter))
+					if confirm.count() != 0:
+						self.redirect("/error?code=5")
+					else :
+						voteEntity = VoteModel (qid=qid,
+											sid=surveyid,
+											voter=voter,
+											answer=answer)
+						voteEntity.put()
+						oldEntity = ResultModel.gql("WHERE qid=:1 and answer=:2",qid,answer)
+						if oldEntity.count()==0 :
+							newEntity = ResultModel(count=1,
+												sid=surveyid,
+												qid=qid,
+												answer=answer)
+						else :
+							newEntity = oldEntity.get()
+							newEntity.count = newEntity.count+1
+						newEntity.put()
+						self.redirect('/participate')
 		else :
 			self.redirect("/error?code=2")
-		for x in range(1,total):
-			#update question Model entity
-			self.response.out.write(x)
-			raw_qid = self.request.get('qid'+str(x))
-			qid = int(raw_qid)
-			
-			raw_answer = self.request.get('answer'+str(x))
-			voter=user
-			if raw_answer :
-				#question = QuestionModel.get_by_id(qid)
-				answer = str(raw_answer)				
-				#confirm whether the voter is present or not
-				confirm = VoteModel.gql("WHERE qid=:1 AND voter=:2",qid,user)
-				self.response.out.write(str(confirm.count())+" where qid " + str(qid) + str(voter))
-				if confirm.count() != 0:
-					self.redirect("/error?code=3")
-				
-				voteEntity = VoteModel (qid=qid,
-									sid=surveyid,
-									voter=voter,
-									answer=answer)
-				voteEntity.put()
-				oldEntity = ResultModel.gql("WHERE qid=:1 and answer=:2",qid,answer)
-				if oldEntity.count()==0 :
-					newEntity = ResultModel(count=1,
-										sid=surveyid,
-										qid=qid,
-										answer=answer)
-				else :
-					newEntity = oldEntity.get()
-					newEntity.count = newEntity.count+1
-				newEntity.put()
-		self.redirect('/participate')
+		
 
 class PopularSurvey(webapp.RequestHandler):
 	def get(self):
@@ -891,6 +977,7 @@ class PopularSurvey(webapp.RequestHandler):
 		url = users.create_login_url(self.request.uri)
 		url_linktext = 'Login'
 		admin = "false"
+		sorted_list =[]
 		if user:
 			url = users.create_logout_url(self.request.uri)
 			url_linktext = 'Logout'
@@ -898,20 +985,29 @@ class PopularSurvey(webapp.RequestHandler):
 				admin = "true"
 				#self.response.out.write("Admin Interface")
 		
-		surveys = db.GqlQuery("SELECT * FROM SurveyModel")
-		surveydict = {}
-		
-		for survey in surveys :
-			s=set([])
-			sid = long(survey.key().id())
-			votes = VoteModel.gql("WHERE sid=:1",sid)
-			for vote in votes :
-				s.add(vote.voter)
+			surveys = db.GqlQuery("SELECT * FROM SurveyModel")
+			if admin == "true":
+				surveys = db.GqlQuery("SELECT * FROM SurveyModel where expiry >=:1", date.today())
+			else :
+				surveys = SurveyModel.gql("where visibility=True and expiry >=:1", date.today())
+				queryAccess = AccessModel.gql("WHERE nick=:1",user.nickname())
+				for result in queryAccess:
+					survey = SurveyModel.get_by_id(result.sid)
+					surveys.append(survey)
+	
+			surveydict = {}
 			
-			totalVotes = len(s)
-			surveydict[survey]=totalVotes
-
-		sorted_list = sorted(surveydict.iteritems(), key=operator.itemgetter(1))
+			for survey in surveys :
+				s=set([])
+				sid = long(survey.key().id())
+				votes = VoteModel.gql("WHERE sid=:1",sid)
+				for vote in votes :
+					s.add(vote.voter)
+				
+				totalVotes = len(s)
+				surveydict[survey]=totalVotes
+	
+			sorted_list = sorted(surveydict.iteritems(), key=operator.itemgetter(1))
 		#self.response.out.write(surveydict)
 
 

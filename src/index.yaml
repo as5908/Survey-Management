@@ -35,4 +35,9 @@ indexes:
 - kind: SurveyModel
   properties:
   - name: visibility
+  - name: expiry
+
+- kind: SurveyModel
+  properties:
+  - name: visibility
   - name: surveyname

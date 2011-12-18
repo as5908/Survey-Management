@@ -5,7 +5,7 @@
 	<td >Select a Survey</td>
     <td>
     	<select name="surveyid" >
-        	<option value="" ></option>
+        	<option value="-1" ></option>
         	{% for survey in surveys %}
         	<option {% if survey.key.id == selsurvey.key.id %} selected {% endif %} 
             value="{{survey.key.id}}">{{ survey.surveyname }}</option>

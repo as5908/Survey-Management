@@ -16,6 +16,7 @@
 	<th>Your Surveys</th>
 	<th>Creation Time</th>
 	<th>Expiration Date</th>
+	<th>Visibility</th>
 </tr>
 {% for survey in surveys %}
 <tr >
@@ -25,6 +26,11 @@
     </td>
     <td align="center">{{survey.created}}</td>
 	<td align="center">{{survey.expiry}}</td>
+	{% if survey.visibility %}
+	<td align="center">Public</td>
+	{% else %}
+	<td align="center">Limited</td>
+	{% endif %}
 </tr>
 {% endfor %}
 {% endif %}

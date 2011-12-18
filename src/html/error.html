@@ -2,20 +2,38 @@
 <table align="center" width="40%" border="0" cellpadding="5" cellspacing="5">
 {% if code == 1 %}
 <tr>
-    <td>A survey with same name already exists. Click <a href="#" onclick="history.back(-1)">here</a> to go back!
+    <td>A survey with same name already exists. Click <a href="javascript:history.go(-1)">here</a> to go back!
     </td>
 </tr>
 {% endif %}
 {% if code == 2 %}
 <tr>
-    <td>You are not authorized to perform this action
+    <td>You are not authorized to perform this action. Click <a href="javascript:history.go(-1)">here</a> to go back!
+    </td>
+</tr>
+{% endif %}
+{% if code == 3 %}
+<tr>
+    <td>The fields can not be left blank.Click <a href="javascript:history.go(-1)">here</a> to go back!
     </td>
 </tr>
 {% endif %}
 {% if code == 4 %}
 <tr>
-    <th>The user already exists.Click <a href="#" onclick="history.back(-1)">here</a> to go back!
+    <th>The user already exists.Click <a href="javascript:history.go(-1)">here</a> to go back!
     </th>
+</tr>
+{% endif %}
+{% if code == 5 %}
+<tr>
+    <td>Your vote has already been recorded
+    </td>
+</tr>
+{% endif %}
+{% if code == 6 %}
+<tr>
+    <td>An error has occured
+    </td>
 </tr>
 {% endif %}
 </table>

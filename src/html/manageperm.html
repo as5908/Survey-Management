@@ -1,7 +1,7 @@
 {% if user %}
 <table align="center"  width="40%" border="0" cellpadding="5" cellspacing="5">
 <tr >
-{% if visibility = "limited" %}
+{% if visibility == "limited" %}
 	<th colspan="5" class="header">List of users who can view your survey - [{{survey.surveyname}}]</th>
 {% else %}
 	<th colspan="5" class="header">Your survey - [{{survey.surveyname}}] is visible to all</th>
@@ -17,7 +17,7 @@
     	{{ username.nick }}
     </td>
     <td>
-    	<input type="submit" value="Revoke Access" title="Revoke access from {{ username.nick }}" class="button-revoke"/>
+    	<input type="submit" value="Revoke Access" title="Revoke access from {{ username.nick }}" onclick="return confirm('Are you sure ?')" class="button-revoke"/>
     </td>
 </tr>
 </form>

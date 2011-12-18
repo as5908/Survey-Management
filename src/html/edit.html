@@ -37,12 +37,12 @@
 </td>
 </tr>
 <tr>
-	<td><input type="submit" class="button-grant" value="Update Question" title="Click to Update Question {{ forloop.counter }}"></td></form>
+	<td><input type="submit" class="button-grant" value="Update Question" title="Click to Update Question {{ forloop.counter }}" onclick="return confirm('This will also delete all votes associated with this question. Are you sure ?')"></td></form>
     <td>
     	<form method="post" action="/deleteQ">
         <input type="hidden" name="questionid" value="{{question.key.id}}" />
         <input type="hidden" name="surveyid" value="{{survey.key.id}}" />
-        <input type="submit" class="button-revoke" title="Click to delete Question {{ forloop.counter }}" value="Delete Question" />
+        <input type="submit" class="button-revoke" title="Click to delete Question {{ forloop.counter }}" onclick="return confirm('Are you sure ?')" value="Delete Question" />
 		</form>
     </td>
 </tr>

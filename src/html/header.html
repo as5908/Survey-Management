@@ -48,7 +48,7 @@ $(function()
 
 <table width="100%">
 	<td>
-	{% if user %}
+{% if user %}
 	Welcome {{user.nickname}}, 
 	{% if active == "home" %}
 		{% if lastLogin  %} you last accessed this page on {{ lastLogin }} (UTC)
