@@ -847,7 +847,8 @@ class ResultHandler(webapp.RequestHandler):
 
 		raw_id= self.request.get('id')
 		surveyid = int(raw_id)
-		survey_name = SurveyModel.get_by_id(surveyid).surveyname
+		survey =  SurveyModel.get_by_id(surveyid)
+		survey_name =survey.surveyname
 		questions = QuestionModel.gql("WHERE sid=:1 ",surveyid)
 
 		values = {'admin': admin,
@@ -859,9 +860,10 @@ class ResultHandler(webapp.RequestHandler):
 		if user :
 			self.response.out.write("""<table align="center"  width="40%%" >
 			<tr><th colspan="2" bgcolor="#0033FF"><font color="#FFF" >%s</font></th></tr>""" % survey_name)
-			self.response.out.write("""<tr >
-		<td colspan="6" align="center"><font color="red">Click on question name to view all the voters</font></th>
-	</tr>""")
+			if survey.author == user or admin=="true":
+				self.response.out.write("""<tr >
+			<td colspan="6" align="center"><font color="red">Click on question name to view all the voters</font></th>
+		</tr>""")
 			for question in questions:
 				answerlist = question.answerlist #All answer choices
 				qid = long(question.key().id())
